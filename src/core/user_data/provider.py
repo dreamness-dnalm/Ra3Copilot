@@ -8,31 +8,31 @@ from pydantic import BaseModel, Field
 config_file_path = os.path.join(user_data_path, 'config.json')
 
 preset_provider_dict = {
-    'deepseek':{
-        name: 'DeepSeek',
-        base_url: 'https://api.deepseek.com',
-        api_key: ''
+    'deepseek': {
+        'name': 'DeepSeek',
+        'base_url': 'https://api.deepseek.com',
+        'api_key': '',
     },
-    'openai':{
-        name: 'OpenAI',
-        base_url: 'https://api.openai.com',
-        api_key: ''
+    'openai': {
+        'name': 'OpenAI',
+        'base_url': 'https://api.openai.com',
+        'api_key': '',
     },
-    'minimax':{
-        name: 'MiniMax',
-        base_url: 'https://api.minimaxi.com',
-        api_key: ''
+    'minimax': {
+        'name': 'MiniMax',
+        'base_url': 'https://api.minimaxi.com',
+        'api_key': '',
     },
-    'glm':{
-        name: 'GLM',
-        base_url: 'https://open.bigmodel.cn/api/paas/v4',
-        api_key: ''
+    'glm': {
+        'name': 'GLM',
+        'base_url': 'https://open.bigmodel.cn/api/paas/v4',
+        'api_key': '',
     },
-    'openai-compatible':{
-        name: 'OpenAI Compatible',
-        base_url: '',
-        api_key: ''
-    }
+    'openai-compatible': {
+        'name': 'OpenAI Compatible',
+        'base_url': '',
+        'api_key': '',
+    },
 }
 
 provider_config_file_path = os.path.join(user_data_path, 'provider_config.json')
@@ -50,7 +50,8 @@ def reload_provider_config_dict():
         provider_config_dict.clear()
         return
     with open(provider_config_file_path, 'r') as f:
-        _dict = {d['name']: ProviderConfig(**d) for d in json.load(f)}
+        data = json.load(f)
+        _dict = {name: ProviderConfig(**config) for name, config in data.items()}
         provider_config_dict.clear()
         provider_config_dict.update(_dict)
 
