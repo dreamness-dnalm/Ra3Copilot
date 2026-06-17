@@ -1,7 +1,7 @@
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
 ALLOWED_TOOLS = {
-    "run_ra3_c_sharp_script",
+    "run_ra3_csharp_script",
     "copy_ra3_map",
     "get_map_list",
     "get_lib_structure",
@@ -20,6 +20,4 @@ async def load_ra3_companion_tools():
         }
     )
     tools = await client.get_tools()
-    for tool in tools:
-        print(tool.name, "-", tool.description)
     return [tool for tool in tools if tool.name in ALLOWED_TOOLS]

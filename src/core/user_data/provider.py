@@ -13,26 +13,26 @@ preset_provider_dict = {
         'base_url': 'https://api.deepseek.com',
         'api_key': '',
     },
-    'openai': {
-        'name': 'OpenAI',
-        'base_url': 'https://api.openai.com',
-        'api_key': '',
-    },
-    'minimax': {
-        'name': 'MiniMax',
-        'base_url': 'https://api.minimaxi.com',
-        'api_key': '',
-    },
-    'glm': {
-        'name': 'GLM',
-        'base_url': 'https://open.bigmodel.cn/api/paas/v4',
-        'api_key': '',
-    },
-    'openai-compatible': {
-        'name': 'OpenAI Compatible',
-        'base_url': '',
-        'api_key': '',
-    },
+    # 'openai': {
+    #     'name': 'OpenAI',
+    #     'base_url': 'https://api.openai.com',
+    #     'api_key': '',
+    # },
+    # 'minimax': {
+    #     'name': 'MiniMax',
+    #     'base_url': 'https://api.minimaxi.com',
+    #     'api_key': '',
+    # },
+    # 'glm': {
+    #     'name': 'GLM',
+    #     'base_url': 'https://open.bigmodel.cn/api/paas/v4',
+    #     'api_key': '',
+    # },
+    # 'openai-compatible': {
+    #     'name': 'OpenAI Compatible',
+    #     'base_url': '',
+    #     'api_key': '',
+    # },
 }
 
 provider_config_file_path = os.path.join(user_data_path, 'provider_config.json')
