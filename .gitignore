@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+
+src/.venv/
+src/build/
+src/dist/
+src/*.spec
+.env.local
+src/.env.local

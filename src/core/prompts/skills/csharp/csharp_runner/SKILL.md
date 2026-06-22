@@ -13,3 +13,10 @@ api: /api/csharpscript/run/file
 接受json数据, 共2个字段:
 - filePath  必填, 源文件路径
 - workingDirectory 可选, 工作路径
+
+## 执行c#代码
+api: /api/csharpscript/run/code
+接受POST请求
+接受json数据, 共2个字段:
+- code  必填, c#源码
+- workingDirectory 可选, 工作路径
