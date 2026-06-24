@@ -19,6 +19,7 @@ from langchain_core.messages import AIMessageChunk, HumanMessage, ToolMessage
 from webview.window import FixPoint
 
 from core.agents.ra3_csharp_writer import create_ra3_csharp_writer_agent
+from core.agents.universal import create_universal_agent
 from core.runtime_env import get_langsmith_status, load_runtime_env
 from core.user_data.config import (
     get_active_model,
@@ -61,10 +62,12 @@ from core.user_data.projects import (
     PROJECTS_DIR,
     ProjectEntry,
     create_map_project_at,
+    create_workspace_project_at,
     list_projects,
     open_map_project_from_directory,
     open_map_project_from_file,
     open_project,
+    open_workspace_project_from_directory,
     remove_recent_project,
 )
 from core.user_data.usage import (
@@ -84,6 +87,10 @@ MIN_WINDOW_WIDTH = 980
 MIN_WINDOW_HEIGHT = 640
 RA3_COMPANION_HOST = "127.0.0.1"
 RA3_COMPANION_PORT = 30033
+
+
+def _normalize_agent_mode(mode: str | None) -> str:
+    return "universal" if mode == "universal" else "ra3"
 
 LOCAL_SKILL_SUMMARY = """当前内置的 agent skill：
 
@@ -114,6 +121,7 @@ def _web_index_path() -> Path:
 class RunState:
     run_id: str
     thread_id: str = ""
+    agent_mode: str = "ra3"
     project: ProjectEntry | None = None
     events: Queue[dict] = field(default_factory=Queue)
     status: str = "queued"
@@ -258,7 +266,8 @@ class DesktopBridge:
     """JS bridge that adapts the LangGraph agent to the desktop frontend."""
 
     def __init__(self) -> None:
-        self.agent = None
+        self.agents: dict[str, object] = {}
+        self.agent_mode = "ra3"
         self.thread_id = uuid4().hex
         self.current_project: ProjectEntry | None = None
         self._agent_lock = threading.Lock()
@@ -411,7 +420,11 @@ class DesktopBridge:
 
     def _reset_agent(self) -> None:
         with self._agent_lock:
-            self.agent = None
+            self.agents.clear()
+
+    def _set_agent_mode(self, agent_mode: str | None) -> str:
+        self.agent_mode = _normalize_agent_mode(agent_mode)
+        return self.agent_mode
 
     def _ensure_active_project(self) -> ProjectEntry:
         if self.current_project is None:
@@ -432,10 +445,15 @@ class DesktopBridge:
             "projectsDir": str(PROJECTS_DIR),
             "threadId": self.thread_id,
             "model": self._model_label(),
-            "agentReady": self.agent is not None,
+            "agentMode": self.agent_mode,
+            "agentReady": self.agent_mode in self.agents,
             "langsmith": get_langsmith_status(),
             "ra3Companion": _ra3_companion_status(),
         }
+
+    def set_agent_mode(self, agent_mode: str = "ra3") -> dict:
+        self._set_agent_mode(agent_mode)
+        return {"ok": True, "context": self.get_context()}
 
     def _settings_snapshot(self) -> dict:
         settings = settings_snapshot()
@@ -490,7 +508,29 @@ class DesktopBridge:
 
     def create_project(self, name: str | None = None, project_path: str | None = None) -> dict:
         try:
+            self._set_agent_mode("ra3")
             self.current_project = create_map_project_at(name=name, project_path=project_path)
+            self.thread_id = uuid4().hex
+            self._reset_agent()
+            return {
+                "ok": True,
+                "projects": list_projects(self.current_project),
+                "context": self.get_context(),
+                "history": self._history_snapshot(self.current_project),
+            }
+        except Exception as exc:
+            return {"ok": False, "error": str(exc)}
+
+    def create_workspace_project(
+        self,
+        name: str | None = None,
+        project_path: str | None = None,
+    ) -> dict:
+        try:
+            self._set_agent_mode("universal")
+            self.current_project = create_workspace_project_at(
+                name=name, project_path=project_path
+            )
             self.thread_id = uuid4().hex
             self._reset_agent()
             return {
@@ -522,6 +562,7 @@ class DesktopBridge:
 
     def open_map_project_file(self, map_file_path: str | None = None) -> dict:
         try:
+            self._set_agent_mode("ra3")
             selected_path = map_file_path
             if not selected_path:
                 if self._window is None:
@@ -540,6 +581,34 @@ class DesktopBridge:
                 self.current_project = open_map_project_from_directory(str(path))
             else:
                 self.current_project = open_map_project_from_file(str(path))
+            self.thread_id = uuid4().hex
+            self._reset_agent()
+            return {
+                "ok": True,
+                "projects": list_projects(self.current_project),
+                "context": self.get_context(),
+                "history": self._history_snapshot(self.current_project),
+            }
+        except Exception as exc:
+            return {"ok": False, "error": str(exc)}
+
+    def open_workspace_project_directory(self, project_directory: str | None = None) -> dict:
+        try:
+            self._set_agent_mode("universal")
+            selected_path = project_directory
+            if not selected_path:
+                if self._window is None:
+                    return {"ok": False, "error": "窗口尚未就绪"}
+                selected = self._window.create_file_dialog(
+                    webview.FOLDER_DIALOG,
+                    directory=str(PROJECTS_DIR),
+                    allow_multiple=False,
+                )
+                if not selected:
+                    return {"ok": True, "cancelled": True}
+                selected_path = selected[0] if isinstance(selected, (list, tuple)) else selected
+
+            self.current_project = open_workspace_project_from_directory(str(selected_path))
             self.thread_id = uuid4().hex
             self._reset_agent()
             return {
@@ -781,13 +850,20 @@ class DesktopBridge:
         prompt = (text or "").strip()
         if not prompt:
             return {"ok": False, "error": "请输入指令。"}
+        options = options or {}
+        agent_mode = self._set_agent_mode(options.get("agentMode"))
         project = self._ensure_active_project()
 
         with self._runs_lock:
             if self._active_run_id:
                 return {"ok": False, "error": "已有任务正在运行。"}
             run_id = uuid4().hex
-            state = RunState(run_id=run_id, thread_id=self.thread_id, project=project)
+            state = RunState(
+                run_id=run_id,
+                thread_id=self.thread_id,
+                agent_mode=agent_mode,
+                project=project,
+            )
             try:
                 active_model = get_active_model()
                 if active_model:
@@ -809,8 +885,8 @@ class DesktopBridge:
 
         worker = threading.Thread(
             target=self._run_worker,
-            args=(state, prompt, options or {}),
-            name=f"ra3-agent-{run_id[:8]}",
+            args=(state, prompt, options),
+            name=f"{agent_mode}-agent-{run_id[:8]}",
             daemon=True,
         )
         worker.start()
@@ -860,18 +936,24 @@ class DesktopBridge:
                     self._active_run_id = None
 
     async def _ensure_agent(self, state: RunState):
-        if self.agent is not None:
-            return self.agent
+        agent_mode = _normalize_agent_mode(state.agent_mode)
+        cached_agent = self.agents.get(agent_mode)
+        if cached_agent is not None:
+            return cached_agent
 
-        state.emit({"type": "status", "text": "正在初始化 RA3 Agent..."})
+        label = "万能 Agent" if agent_mode == "universal" else "RA3 Agent"
+        state.emit({"type": "status", "text": f"正在初始化 {label}..."})
         with self._agent_lock:
-            needs_init = self.agent is None
+            needs_init = agent_mode not in self.agents
         if needs_init:
-            agent = await create_ra3_csharp_writer_agent()
+            if agent_mode == "universal":
+                agent = await create_universal_agent()
+            else:
+                agent = await create_ra3_csharp_writer_agent()
             with self._agent_lock:
-                self.agent = agent
+                self.agents[agent_mode] = agent
         state.emit({"type": "status", "text": "Agent 已就绪。"})
-        return self.agent
+        return self.agents[agent_mode]
 
     def _save_assistant_message(self, state: RunState, status: str) -> None:
         project = state.project or self._ensure_active_project()
@@ -928,12 +1010,17 @@ class DesktopBridge:
                 "runId": state.run_id,
                 "threadId": state.thread_id or self.thread_id,
                 "permissionPolicy": options.get("permissionPolicy", "once"),
+                "agentMode": state.agent_mode,
             }
         )
 
         tool_calls: dict[str, dict] = {}
         try:
-            local_reply = _local_reply_for_prompt(prompt)
+            local_reply = (
+                _local_reply_for_prompt(prompt)
+                if _normalize_agent_mode(state.agent_mode) == "ra3"
+                else None
+            )
             if local_reply:
                 state.usage = TokenUsage(usage_known=True)
                 state.assistant_text += local_reply
@@ -958,6 +1045,7 @@ class DesktopBridge:
                     "app": APP_TITLE,
                     "thread_id": state.thread_id or self.thread_id,
                     "permission_policy": options.get("permissionPolicy", "once"),
+                    "agent_mode": state.agent_mode,
                     "project_root": (state.project or self._ensure_active_project()).path,
                 },
             }
