@@ -759,13 +759,24 @@
     }
 
     .welcome-shell {
-      width: min(860px, calc(100% - 96px));
+      width: min(980px, calc(100% - 96px));
       min-height: 100%;
       margin: 0 auto;
       padding: 86px 0 72px;
       display: flex;
       flex-direction: column;
       justify-content: center;
+    }
+
+    .welcome-stage {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .welcome-stage[hidden] {
+      display: none;
     }
 
     .welcome-kicker {
@@ -787,6 +798,135 @@
       color: var(--muted);
       font-size: 14px;
       line-height: 1.65;
+    }
+
+    .agent-choice-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 34px;
+    }
+
+    .agent-choice {
+      min-height: 248px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 22px;
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: var(--surface);
+      color: var(--fg);
+      text-align: left;
+      box-shadow: 0 1px 0 color-mix(in oklch, var(--fg) 4%, transparent);
+      transition: transform .16s ease, border-color .16s ease, background .16s ease, box-shadow .16s ease;
+    }
+
+    .agent-choice:hover,
+    .agent-choice:focus-visible {
+      outline: 0;
+      transform: translateY(-2px);
+      border-color: color-mix(in oklch, var(--accent) 42%, var(--border));
+      box-shadow: var(--shadow);
+    }
+
+    .agent-choice.secondary:hover,
+    .agent-choice.secondary:focus-visible {
+      border-color: color-mix(in oklch, var(--accent-2) 46%, var(--border));
+    }
+
+    .agent-choice-top {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .agent-chip {
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0 10px;
+      color: var(--muted);
+      background: var(--surface-2);
+      font-size: 12px;
+      font-weight: 560;
+      white-space: nowrap;
+    }
+
+    .agent-name {
+      display: block;
+      font-size: clamp(24px, 2.2vw, 32px);
+      line-height: 1.16;
+      font-weight: 650;
+      letter-spacing: -0.015em;
+    }
+
+    .agent-description {
+      display: block;
+      max-width: 52ch;
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .agent-choice-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding-top: 4px;
+    }
+
+    .agent-choice-foot strong {
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .agent-arrow {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      background: var(--surface-2);
+    }
+
+    .agent-arrow svg {
+      width: 16px;
+      height: 16px;
+      stroke-width: 1.8;
+    }
+
+    .welcome-detail-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 18px;
+    }
+
+    .back-agent-btn {
+      min-height: 32px;
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 0 11px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .back-agent-btn:hover,
+    .back-agent-btn:focus-visible {
+      outline: 0;
+      color: var(--fg);
+      background: var(--surface-2);
     }
 
     .welcome-actions {
@@ -812,6 +952,11 @@
     .welcome-action:hover {
       background: var(--surface-2);
       border-color: color-mix(in oklch, var(--border) 70%, var(--accent));
+    }
+
+    .welcome-action:focus-visible {
+      outline: 2px solid color-mix(in oklch, var(--accent) 34%, transparent);
+      outline-offset: 2px;
     }
 
     .welcome-action.primary {
@@ -2691,7 +2836,9 @@
       .workspace { grid-template-columns: 210px 1fr; }
       .settings-pane { grid-template-columns: 210px 1fr; }
       .welcome-shell { width: calc(100% - 40px); }
+      .agent-choice-grid { grid-template-columns: minmax(0, 1fr); }
       .welcome-actions { grid-template-columns: minmax(0, 1fr); }
+      .welcome-detail-head { flex-direction: column; }
     }
   </style>
   <script src="./vendor/markdown-it.min.js"></script>
@@ -2818,33 +2965,122 @@
 
         <main class="welcome-pane" id="welcomePane" aria-label="欢迎页">
           <section class="welcome-shell">
-            <div class="welcome-kicker">Ra3Copilot</div>
-            <h1 class="welcome-title">选择地图工程</h1>
-            <p class="welcome-copy">先选择一个工程，再让 Agent 读取脚本、检查配置或生成修改建议。工程文件由 Ra3Copilot 在本机自动管理。</p>
-
-            <div class="welcome-actions" aria-label="启动选项">
-              <button class="welcome-action primary" type="button" id="startDefaultProjectBtn">
-                <strong>立即对话</strong>
-                <span>使用默认工程。适合快速询问、临时检查和没有明确地图目录的任务。</span>
-              </button>
-              <button class="welcome-action" type="button" id="createProjectBtn">
-                <strong>新建地图工程</strong>
-                <span>创建一个新的本地地图工程，保存到默认或指定目录。</span>
-              </button>
-              <button class="welcome-action" type="button" id="openMapProjectBtn">
-                <strong>打开地图工程</strong>
-                <span>选择地图工程文件夹；如果没有 .mp 文件，会自动创建一个。</span>
-              </button>
-            </div>
-
-            <section class="recent-section" aria-label="最近打开的地图工程">
-              <div class="recent-head">
-                <h2>最近打开</h2>
+            <section class="welcome-stage" id="agentSelectPane" aria-label="智能体选择">
+              <div>
+                <div class="welcome-kicker">Ra3Copilot</div>
+                <h1 class="welcome-title">选择智能体</h1>
               </div>
-              <span id="projectsDirLabel" hidden></span>
-              <div class="recent-projects" id="recentProjectsList">
-                <div class="recent-empty">正在读取最近工程...</div>
+
+              <div class="agent-choice-grid" aria-label="智能体入口">
+                <button class="agent-choice" type="button" id="selectRa3AgentBtn">
+                  <span class="agent-choice-top">
+                    <span class="agent-chip">地图工程</span>
+                  </span>
+                  <span>
+                    <span class="agent-name">RA3 智能体</span>
+                    <span class="agent-description">针对 RA3 进行特别定制的智能体。</span>
+                  </span>
+                  <span class="agent-choice-foot">
+                    <strong>进入 RA3 工作流</strong>
+                    <span class="agent-arrow" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M5 12h14"></path>
+                        <path d="M13 6l6 6-6 6"></path>
+                      </svg>
+                    </span>
+                  </span>
+                </button>
+
+                <button class="agent-choice secondary" type="button" id="selectUniversalAgentBtn">
+                  <span class="agent-choice-top">
+                    <span class="agent-chip">通用任务</span>
+                  </span>
+                  <span>
+                    <span class="agent-name">万能智能体</span>
+                    <span class="agent-description">可以做任何事情的智能体，协助高效工作学习。</span>
+                  </span>
+                  <span class="agent-choice-foot">
+                    <strong>进入通用工作流</strong>
+                    <span class="agent-arrow" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M5 12h14"></path>
+                        <path d="M13 6l6 6-6 6"></path>
+                      </svg>
+                    </span>
+                  </span>
+                </button>
               </div>
+            </section>
+
+            <section class="welcome-stage" id="ra3WelcomePane" aria-label="RA3 智能体欢迎页" hidden>
+              <div class="welcome-detail-head">
+                <div>
+                  <div class="welcome-kicker">RA3 智能体</div>
+                  <h1 class="welcome-title">选择地图工程</h1>
+                  <p class="welcome-copy">先选择一个工程，再让 RA3 智能体读取脚本、检查配置或生成修改建议。工程文件由 Ra3Copilot 在本机自动管理。</p>
+                </div>
+                <button class="back-agent-btn" type="button" data-agent-back>返回选择</button>
+              </div>
+
+              <div class="welcome-actions" aria-label="RA3 启动选项">
+                <button class="welcome-action primary" type="button" id="startDefaultProjectBtn">
+                  <strong>立即对话</strong>
+                  <span>使用默认工程。适合快速询问、临时检查和没有明确地图目录的任务。</span>
+                </button>
+                <button class="welcome-action" type="button" id="createProjectBtn">
+                  <strong>新建地图工程</strong>
+                  <span>创建一个新的本地地图工程，保存到默认或指定目录。</span>
+                </button>
+                <button class="welcome-action" type="button" id="openMapProjectBtn">
+                  <strong>打开地图工程</strong>
+                  <span>选择地图工程文件夹；如果没有 .mp 文件，会自动创建一个。</span>
+                </button>
+              </div>
+
+              <section class="recent-section" aria-label="最近打开的地图工程">
+                <div class="recent-head">
+                  <h2>最近打开</h2>
+                </div>
+                <span id="projectsDirLabel" hidden></span>
+                <div class="recent-projects" id="recentProjectsList">
+                  <div class="recent-empty">正在读取最近工程...</div>
+                </div>
+              </section>
+            </section>
+
+            <section class="welcome-stage" id="universalWelcomePane" aria-label="万能智能体欢迎页" hidden>
+              <div class="welcome-detail-head">
+                <div>
+                  <div class="welcome-kicker">万能智能体</div>
+                  <h1 class="welcome-title">选择工作区</h1>
+                  <p class="welcome-copy">先选择一个工作区，再让万能智能体处理工作、学习、写作、代码和信息整理任务。打开普通文件夹不会自动创建 .mp 地图文件。</p>
+                </div>
+                <button class="back-agent-btn" type="button" data-agent-back>返回选择</button>
+              </div>
+
+              <div class="welcome-actions" aria-label="万能智能体启动选项">
+                <button class="welcome-action primary" type="button" id="startUniversalProjectBtn">
+                  <strong>立即对话</strong>
+                  <span>使用默认工作区。适合快速问答、规划、写作和没有明确文件夹的任务。</span>
+                </button>
+                <button class="welcome-action" type="button" id="createUniversalProjectBtn">
+                  <strong>新建工作区</strong>
+                  <span>创建一个新的本地工作区，保存到默认或指定目录。</span>
+                </button>
+                <button class="welcome-action" type="button" id="openWorkspaceProjectBtn">
+                  <strong>打开工作区</strong>
+                  <span>选择任意已有文件夹作为通用工作区；不会创建 .mp 文件。</span>
+                </button>
+              </div>
+
+              <section class="recent-section" aria-label="最近打开的工作区">
+                <div class="recent-head">
+                  <h2>最近打开</h2>
+                </div>
+                <div class="recent-projects" id="universalRecentProjectsList">
+                  <div class="recent-empty">正在读取最近工作区...</div>
+                </div>
+              </section>
             </section>
           </section>
         </main>
@@ -3309,7 +3545,7 @@
                 <div class="settings-row">
                   <div class="settings-row-label">
                     <strong>操作</strong>
-                    <span>新工程不能保存到非空文件夹；保存目录不能包含 Windows 非法字符。</span>
+                    <span id="projectOperationHint">新工程不能保存到非空文件夹；保存目录不能包含 Windows 非法字符。</span>
                   </div>
                   <div class="settings-actions">
                     <button class="primary-btn" type="button" id="confirmProjectCreateBtn">创建并打开</button>
@@ -3485,6 +3721,7 @@
       lastPrompt: "",
       busy: false,
       activeView: "welcome",
+      agentMode: "ra3",
       projects: null,
       history: [],
       projectsLoadedFromBridge: false,
@@ -3513,6 +3750,7 @@
       showUsageDetails: false,
       providerDialogMode: "create",
       editingProviderName: "",
+      projectDialogAgentMode: "ra3",
       projectPathTouched: false,
       historyContextId: "",
       windowResize: null
@@ -3548,18 +3786,30 @@
     const runtimeCacheRate = document.getElementById("runtimeCacheRate");
     const runtimeCost = document.getElementById("runtimeCost");
     const welcomePane = document.getElementById("welcomePane");
+    const agentSelectPane = document.getElementById("agentSelectPane");
+    const ra3WelcomePane = document.getElementById("ra3WelcomePane");
+    const universalWelcomePane = document.getElementById("universalWelcomePane");
+    const selectRa3AgentBtn = document.getElementById("selectRa3AgentBtn");
+    const selectUniversalAgentBtn = document.getElementById("selectUniversalAgentBtn");
+    const agentBackButtons = Array.from(document.querySelectorAll("[data-agent-back]"));
     const startDefaultProjectBtn = document.getElementById("startDefaultProjectBtn");
     const createProjectBtn = document.getElementById("createProjectBtn");
     const openMapProjectBtn = document.getElementById("openMapProjectBtn");
+    const startUniversalProjectBtn = document.getElementById("startUniversalProjectBtn");
+    const createUniversalProjectBtn = document.getElementById("createUniversalProjectBtn");
+    const openWorkspaceProjectBtn = document.getElementById("openWorkspaceProjectBtn");
     const recentProjectsList = document.getElementById("recentProjectsList");
+    const universalRecentProjectsList = document.getElementById("universalRecentProjectsList");
     const projectsDirLabel = document.getElementById("projectsDirLabel");
     const projectDialog = document.getElementById("projectDialog");
+    const projectDialogTitle = document.getElementById("projectDialogTitle");
     const closeProjectDialogBtn = document.getElementById("closeProjectDialogBtn");
     const confirmProjectCreateBtn = document.getElementById("confirmProjectCreateBtn");
     const projectNameInput = document.getElementById("projectNameInput");
     const projectPathInput = document.getElementById("projectPathInput");
     const browseProjectDirBtn = document.getElementById("browseProjectDirBtn");
     const projectCreateHint = document.getElementById("projectCreateHint");
+    const projectOperationHint = document.getElementById("projectOperationHint");
     const projectRootLabel = document.getElementById("projectRootLabel");
     const sessionTitle = document.getElementById("sessionTitle");
     const runStatusLabel = document.getElementById("runStatusLabel");
@@ -3664,10 +3914,89 @@
     const saveObservabilityBtn = document.getElementById("saveObservabilityBtn");
     const SETTINGS_CACHE_KEY = "ra3copilot.settingsSnapshot.v1";
     const USAGE_DISPLAY_KEY = "ra3copilot.showUsageDetails.v1";
+    const AGENT_MODE_KEY = "ra3copilot.agentMode.v1";
+    const AGENT_META = {
+      ra3: {
+        label: "RA3 智能体",
+        projectLabel: "地图工程",
+        projectBadge: "地图工程",
+        createTitle: "新建地图工程",
+        createHint: "默认保存在用户数据的 projects 目录下；目录不存在会自动创建。",
+        createEmptyHint: "新工程不能保存到非空文件夹；保存目录不能包含 Windows 非法字符。",
+        sessionFallback: "RA3 对话",
+        projectReady: "地图工程已打开，准备读取脚本与配置",
+        projectMissing: "尚未选择地图工程",
+        placeholder: "向 RA3 智能体描述要检查、生成或修改的内容",
+        busy: "RA3 智能体正在处理当前请求",
+        welcome:
+          "你好，我是 RA3 智能体。把要检查或修改的 RA3 地图、脚本、C# 地编伴侣问题发给我，我会通过本地 Agent 和 RA3 Companion 工具处理。"
+      },
+      universal: {
+        label: "万能智能体",
+        projectLabel: "工作区",
+        projectBadge: "工作区",
+        createTitle: "新建工作区",
+        createHint: "默认保存在用户数据的 projects 目录下；目录不存在会自动创建。",
+        createEmptyHint: "新工作区不能保存到非空文件夹；保存目录不能包含 Windows 非法字符。",
+        sessionFallback: "通用对话",
+        projectReady: "工作区已打开，可以开始通用任务",
+        projectMissing: "尚未打开工作区",
+        placeholder: "向万能智能体描述要处理的工作、学习、写作或代码任务",
+        busy: "万能智能体正在处理当前请求",
+        welcome:
+          "你好，我是万能智能体。你可以把工作、学习、写作、代码或信息整理任务交给我，我会尽量给出清晰、可执行的协助。"
+      }
+    };
     let selectedPermissionPolicy = "once";
 
     function getApi() {
       return window.pywebview && window.pywebview.api ? window.pywebview.api : null;
+    }
+
+    function normalizeAgentMode(mode) {
+      return mode === "universal" ? "universal" : "ra3";
+    }
+
+    function currentAgentMeta() {
+      return AGENT_META[state.agentMode] || AGENT_META.ra3;
+    }
+
+    function readAgentModePreference() {
+      try {
+        return normalizeAgentMode(window.localStorage.getItem(AGENT_MODE_KEY));
+      } catch {
+        return "ra3";
+      }
+    }
+
+    function writeAgentModePreference(mode) {
+      try {
+        window.localStorage.setItem(AGENT_MODE_KEY, normalizeAgentMode(mode));
+      } catch {
+        // Ignore UI preference persistence failures.
+      }
+    }
+
+    function setAgentMode(mode, persist = true, syncBridge = true) {
+      state.agentMode = normalizeAgentMode(mode);
+      document.body.dataset.agentMode = state.agentMode;
+      if (persist) writeAgentModePreference(state.agentMode);
+      if (permissionCommand && permissionNote) setPermissionPolicy(selectedPermissionPolicy);
+      if (state.context) applyContext(state.context, false);
+      const api = getApi();
+      if (syncBridge && api && api.set_agent_mode) {
+        Promise.resolve(api.set_agent_mode(state.agentMode)).catch(() => {});
+      }
+    }
+
+    async function syncAgentMode(mode, persist = true) {
+      setAgentMode(mode, persist, false);
+      const api = getApi();
+      if (!api || !api.set_agent_mode) return;
+      const result = await api.set_agent_mode(state.agentMode);
+      if (result?.ok && result.context) {
+        applyContext(result.context, false);
+      }
     }
 
     function showToast(text) {
@@ -4114,20 +4443,21 @@
       });
     }
 
-    function defaultProjectName() {
+    function defaultProjectName(mode = state.agentMode) {
       const now = new Date();
       const pad = (value) => String(value).padStart(2, "0");
-      return `地图工程 ${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}-${pad(now.getMinutes())}`;
+      const prefix = normalizeAgentMode(mode) === "universal" ? "工作区" : "地图工程";
+      return `${prefix} ${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}-${pad(now.getMinutes())}`;
     }
 
-    function sanitizePathSegment(value) {
+    function sanitizePathSegment(value, mode = state.agentMode) {
       const text = String(value || "").trim();
       const cleaned = text
         .replace(/[<>:"/\\|?*\x00-\x1f]/g, "-")
         .replace(/\s+/g, " ")
         .replace(/[. ]+$/g, "")
         .trim();
-      return cleaned || defaultProjectName();
+      return cleaned || defaultProjectName(mode);
     }
 
     function projectDirectoryRoot() {
@@ -4141,13 +4471,16 @@
       return `${root.replace(/[\\/]+$/g, "")}${separator}${folderName}`;
     }
 
-    function suggestedProjectPath(name) {
-      return joinDirectory(projectDirectoryRoot(), sanitizePathSegment(name || defaultProjectName()));
+    function suggestedProjectPath(name, mode = state.agentMode) {
+      return joinDirectory(projectDirectoryRoot(), sanitizePathSegment(name || defaultProjectName(mode), mode));
     }
 
     function syncProjectPathWithName() {
       if (state.projectPathTouched) return;
-      projectPathInput.value = suggestedProjectPath(projectNameInput.value);
+      projectPathInput.value = suggestedProjectPath(
+        projectNameInput.value,
+        state.projectDialogAgentMode
+      );
     }
 
     function previewProjectsSnapshot() {
@@ -4167,25 +4500,45 @@
       };
     }
 
-    function renderRecentProjects() {
-      const snapshot = state.projects || previewProjectsSnapshot();
-      projectsDirLabel.textContent = "";
-      projectCreateHint.textContent = "默认保存在用户数据的 projects 目录下；目录不存在会自动创建。";
+    function projectBadgeText(project) {
+      const kind = String(project?.kind || "").toLowerCase();
+      if (kind === "workspace") return "工作区";
+      if (kind === "default") return "默认工程";
+      return "地图工程";
+    }
 
-      const projects = snapshot.recentProjects || [];
+    function recentProjectsForMode(mode, projects) {
+      const normalizedMode = normalizeAgentMode(mode);
+      const items = Array.isArray(projects) ? projects : [];
+      if (normalizedMode === "ra3") {
+        return items.filter((project) => String(project?.kind || "map").toLowerCase() === "map");
+      }
+      return items;
+    }
+
+    function recentEmptyText(mode) {
+      return normalizeAgentMode(mode) === "ra3"
+        ? "还没有最近打开的地图工程。可以直接进入默认工程，或创建一个新工程。"
+        : "还没有最近打开的工作区。可以直接进入默认工作区，或创建一个新工作区。";
+    }
+
+    function renderRecentProjectsFor(mode, container) {
+      if (!container) return;
+      const snapshot = state.projects || previewProjectsSnapshot();
+      const projects = recentProjectsForMode(mode, snapshot.recentProjects || []);
       if (!projects.length) {
-        recentProjectsList.innerHTML = `<div class="recent-empty">还没有最近打开的地图工程。可以直接进入默认工程，或创建一个新工程。</div>`;
+        container.innerHTML = `<div class="recent-empty">${escapeHtml(recentEmptyText(mode))}</div>`;
         return;
       }
 
-      recentProjectsList.innerHTML = projects.map((project) => `
+      container.innerHTML = projects.map((project) => `
         <div class="recent-project">
           <button class="provider-main" type="button" data-open-project="${escapeHtml(project.id)}">
             <span class="recent-project-main">
               <strong>${escapeHtml(project.name || project.id)}</strong>
               <span>上次打开：${escapeHtml(formatProjectTime(project.last_opened_at))}</span>
             </span>
-            <span class="settings-badge">地图工程</span>
+            <span class="settings-badge">${escapeHtml(projectBadgeText(project))}</span>
           </button>
           <span class="recent-actions">
             <button class="ghost-btn" type="button" data-open-project="${escapeHtml(project.id)}">打开</button>
@@ -4194,12 +4547,18 @@
         </div>
       `).join("");
 
-      recentProjectsList.querySelectorAll("[data-open-project]").forEach((button) => {
-        button.addEventListener("click", () => openProjectAndChat(button.dataset.openProject));
+      container.querySelectorAll("[data-open-project]").forEach((button) => {
+        button.addEventListener("click", () => openProjectAndChat(button.dataset.openProject, mode));
       });
-      recentProjectsList.querySelectorAll("[data-remove-project]").forEach((button) => {
+      container.querySelectorAll("[data-remove-project]").forEach((button) => {
         button.addEventListener("click", () => removeProjectFromRecent(button.dataset.removeProject));
       });
+    }
+
+    function renderRecentProjects() {
+      if (projectsDirLabel) projectsDirLabel.textContent = "";
+      renderRecentProjectsFor("ra3", recentProjectsList);
+      renderRecentProjectsFor("universal", universalRecentProjectsList);
     }
 
     function applyProjectsSnapshot(snapshot) {
@@ -5116,6 +5475,20 @@
       return result;
     }
 
+    function showAgentSelection() {
+      agentSelectPane.hidden = false;
+      ra3WelcomePane.hidden = true;
+      universalWelcomePane.hidden = true;
+    }
+
+    function showAgentWelcome(mode) {
+      setAgentMode(mode);
+      agentSelectPane.hidden = true;
+      ra3WelcomePane.hidden = state.agentMode !== "ra3";
+      universalWelcomePane.hidden = state.agentMode !== "universal";
+      renderRecentProjects();
+    }
+
     function showWelcome() {
       state.activeView = "welcome";
       workspace.classList.add("welcome-mode");
@@ -5124,6 +5497,7 @@
       settingsPane.classList.add("view-hidden");
       drawer.classList.add("closed");
       openSettingsBtn.classList.remove("active");
+      showAgentSelection();
       renderRecentProjects();
     }
 
@@ -5297,7 +5671,8 @@
       appendWelcome();
     }
 
-    async function openProjectAndChat(projectId = "default") {
+    async function openProjectAndChat(projectId = "default", agentMode = state.agentMode) {
+      await syncAgentMode(agentMode);
       const result = await callProjectApi("open_project", projectId || "default");
       if (!result) return;
       resetConversationView();
@@ -5307,10 +5682,20 @@
       showToast(`已打开工程：${result.context?.project?.name || "默认工程"}`);
     }
 
-    function openProjectDialog() {
+    function openProjectDialog(agentMode = "ra3") {
+      const normalizedMode = normalizeAgentMode(agentMode);
+      state.projectDialogAgentMode = normalizedMode;
+      setAgentMode(normalizedMode);
+      const agent = currentAgentMeta();
       state.projectPathTouched = false;
-      projectNameInput.value = defaultProjectName();
-      projectPathInput.value = suggestedProjectPath(projectNameInput.value);
+      if (projectDialogTitle) projectDialogTitle.textContent = agent.createTitle;
+      projectCreateHint.textContent = agent.createHint;
+      projectOperationHint.textContent = agent.createEmptyHint;
+      projectNameInput.placeholder = normalizedMode === "universal"
+        ? "例如：论文资料整理"
+        : "例如：日冕脚本修复";
+      projectNameInput.value = defaultProjectName(normalizedMode);
+      projectPathInput.value = suggestedProjectPath(projectNameInput.value, normalizedMode);
       projectDialog.classList.remove("hidden");
       window.setTimeout(() => projectNameInput.focus(), 0);
     }
@@ -5320,6 +5705,9 @@
     }
 
     async function createProjectAndChat() {
+      const agentMode = normalizeAgentMode(state.projectDialogAgentMode);
+      await syncAgentMode(agentMode);
+      const agent = currentAgentMeta();
       const name = projectNameInput.value.trim();
       const directory = projectPathInput.value.trim();
       if (!directory) {
@@ -5328,7 +5716,8 @@
         return;
       }
       confirmProjectCreateBtn.disabled = true;
-      const result = await callProjectApi("create_project", name, directory);
+      const method = agentMode === "universal" ? "create_workspace_project" : "create_project";
+      const result = await callProjectApi(method, name, directory);
       confirmProjectCreateBtn.disabled = false;
       if (!result) return;
       closeProjectDialog();
@@ -5336,7 +5725,7 @@
       showChat();
       await refreshFilesAfterProjectChange();
       setBusy(false);
-      showToast(`已创建工程：${result.context?.project?.name || name || "地图工程"}`);
+      showToast(`已创建${agent.projectLabel}：${result.context?.project?.name || name || agent.projectLabel}`);
     }
 
     async function chooseProjectDirectory() {
@@ -5356,6 +5745,7 @@
     }
 
     async function openMapProjectAndChat() {
+      await syncAgentMode("ra3");
       const api = getApi();
       if (!api || !api.open_map_project_file) {
         showToast("桌面桥尚未就绪");
@@ -5385,6 +5775,39 @@
       await refreshFilesAfterProjectChange();
       setBusy(false);
       showToast(`已打开工程：${result.context?.project?.name || "地图工程"}`);
+    }
+
+    async function openWorkspaceProjectAndChat() {
+      await syncAgentMode("universal");
+      const api = getApi();
+      if (!api || !api.open_workspace_project_directory) {
+        showToast("桌面桥尚未就绪");
+        return;
+      }
+      openWorkspaceProjectBtn.disabled = true;
+      let result;
+      try {
+        result = await api.open_workspace_project_directory();
+      } catch (error) {
+        openWorkspaceProjectBtn.disabled = false;
+        showToast(error?.message || "打开工作区失败");
+        return;
+      }
+      openWorkspaceProjectBtn.disabled = false;
+      if (!result.ok) {
+        showToast(result.error || "打开工作区失败");
+        return;
+      }
+      if (result.cancelled) return;
+      if (result.projects) applyProjectsSnapshot(result.projects);
+      if (result.context) applyContext(result.context, false);
+      if (result.history) applyHistorySnapshot(result.history);
+      await loadConversationUsage(true).catch((error) => showToast(error.message || String(error)));
+      resetConversationView();
+      showChat();
+      await refreshFilesAfterProjectChange();
+      setBusy(false);
+      showToast(`已打开工作区：${result.context?.project?.name || "工作区"}`);
     }
 
     async function removeProjectFromRecent(projectId) {
@@ -6321,8 +6744,9 @@
         renderConversationUsage();
       }
       renderChatModelSelect();
-      sessionTitle.textContent = context.project?.name || "当前对话";
-      projectRootLabel.textContent = context.project ? "地图工程已打开，准备读取脚本与配置" : "尚未选择地图工程";
+      const agent = currentAgentMeta();
+      sessionTitle.textContent = context.project?.name || agent.sessionFallback;
+      projectRootLabel.textContent = context.project ? agent.projectReady : agent.projectMissing;
       renderConversationList();
       if (updateStatus) {
         runStatusLabel.textContent = context.agentReady ? "Agent 已缓存" : "准备就绪";
@@ -6334,23 +6758,25 @@
       sendBtn.disabled = busy || !getApi();
       stopBtn.disabled = !busy;
       renderChatModelSelect();
+      const agent = currentAgentMeta();
       promptInput.placeholder = busy
-        ? "Agent 正在处理当前请求"
-        : "向 Ra3Copilot 描述要检查、生成或修改的内容";
+        ? agent.busy
+        : agent.placeholder;
       if (!busy && state.activeView === "chat") promptInput.focus();
     }
 
     function appendWelcome() {
+      const agent = currentAgentMeta();
       messages.innerHTML = `
         <article class="message assistant">
           <div class="avatar" aria-hidden="true">AI</div>
           <div class="bubble plain">
             <div class="message-meta">
-              <span class="role">Ra3Copilot</span>
+              <span class="role">${agent.label}</span>
               <span>准备就绪</span>
             </div>
             <div class="message-body">
-              <p>你好，我是 Ra3Copilot。把要检查或修改的 RA3 地图、脚本、C# 地编伴侣问题发给我，我会通过本地 Agent 和 RA3 Companion 工具处理。</p>
+              <p>${escapeHtml(agent.welcome)}</p>
             </div>
           </div>
         </article>
@@ -6371,13 +6797,14 @@
 
     function appendAssistantMessage(metaText = "运行中") {
       cancelAssistantRender();
+      const agent = currentAgentMeta();
       const article = document.createElement("article");
       article.className = "message assistant";
       article.innerHTML = `
         <div class="avatar" aria-hidden="true">AI</div>
         <div class="bubble plain">
           <div class="message-meta">
-            <span class="role">Ra3Copilot</span>
+            <span class="role">${agent.label}</span>
             <span>${escapeHtml(metaText)}</span>
           </div>
           <div class="message-body"><p class="status-line">等待 Agent 响应...</p></div>
@@ -6627,7 +7054,9 @@
         explain: "会提示 Agent 先说明计划，本轮暂不主动调用工具。"
       };
       const commandByPolicy = {
-        once: "标准运行：按需调用 RA3 Companion 工具。",
+        once: state.agentMode === "universal"
+          ? "标准运行：使用通用智能体处理任务。"
+          : "标准运行：按需调用 RA3 Companion 工具。",
         remember: "只读优先：需要写入、复制或运行脚本前先解释。",
         explain: "先说明计划：本轮先给出人工确认项。"
       };
@@ -6811,7 +7240,10 @@
       runStatusLabel.textContent = "提交中";
 
       try {
-        const result = await api.start_run(text, { permissionPolicy: selectedPermissionPolicy });
+        const result = await api.start_run(text, {
+          permissionPolicy: selectedPermissionPolicy,
+          agentMode: state.agentMode
+        });
         if (!result.ok) throw new Error(result.error || "无法启动 Agent");
         if (result.history) applyHistorySnapshot(result.history);
         state.currentRunId = result.runId;
@@ -7050,12 +7482,23 @@
     });
     saveFileBtn.addEventListener("click", saveActiveFile);
 
-    startDefaultProjectBtn.addEventListener("click", () => {
-      openProjectAndChat("default");
+    selectRa3AgentBtn.addEventListener("click", () => showAgentWelcome("ra3"));
+    selectUniversalAgentBtn.addEventListener("click", () => showAgentWelcome("universal"));
+    agentBackButtons.forEach((button) => {
+      button.addEventListener("click", showAgentSelection);
     });
 
-    createProjectBtn.addEventListener("click", openProjectDialog);
+    startDefaultProjectBtn.addEventListener("click", () => {
+      openProjectAndChat("default", "ra3");
+    });
+
+    createProjectBtn.addEventListener("click", () => openProjectDialog("ra3"));
     openMapProjectBtn.addEventListener("click", openMapProjectAndChat);
+    startUniversalProjectBtn.addEventListener("click", () => {
+      openProjectAndChat("default", "universal");
+    });
+    createUniversalProjectBtn.addEventListener("click", () => openProjectDialog("universal"));
+    openWorkspaceProjectBtn.addEventListener("click", openWorkspaceProjectAndChat);
     closeProjectDialogBtn.addEventListener("click", closeProjectDialog);
     projectDialog.addEventListener("click", (event) => {
       if (event.target === projectDialog) closeProjectDialog();
@@ -7261,6 +7704,7 @@
       showToast("Model 已删除");
     });
 
+    setAgentMode(readAgentModePreference(), false);
     setPermissionPolicy("once");
     setUsageDisplayPreference(readUsageDisplayPreference(), false);
     applyProjectsSnapshot(previewProjectsSnapshot());

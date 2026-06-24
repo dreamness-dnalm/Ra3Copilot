@@ -121,9 +121,9 @@ def _ensure_default_project(index: dict) -> ProjectEntry:
     return entry
 
 
-def _normalize_project_name(name: str | None) -> str:
+def _normalize_project_name(name: str | None, default_prefix: str = "地图工程") -> str:
     cleaned = (name or "").strip()
-    return cleaned or f"地图工程 {datetime.now().strftime('%Y-%m-%d %H-%M')}"
+    return cleaned or f"{default_prefix} {datetime.now().strftime('%Y-%m-%d %H-%M')}"
 
 
 def _safe_project_id(name: str) -> str:
@@ -251,10 +251,16 @@ def create_map_project(name: str | None = None) -> ProjectEntry:
     return create_map_project_at(name=name, project_path=None)
 
 
-def create_map_project_at(name: str | None = None, project_path: str | None = None) -> ProjectEntry:
+def _create_project_at(
+    name: str | None = None,
+    project_path: str | None = None,
+    *,
+    kind: str,
+) -> ProjectEntry:
     index = _load_index()
     _ensure_default_project(index)
-    project_name = _normalize_project_name(name)
+    default_prefix = "工作区" if kind == "workspace" else "地图工程"
+    project_name = _normalize_project_name(name, default_prefix)
     if project_path:
         target_path = _assert_valid_path_text(project_path)
         if _entry_index_by_path(index, target_path) >= 0:
@@ -271,7 +277,7 @@ def create_map_project_at(name: str | None = None, project_path: str | None = No
         id=project_id,
         name=project_name,
         path=str(target_path),
-        kind="map",
+        kind=kind,
         created_at=now,
         last_opened_at=now,
         hidden=False,
@@ -281,6 +287,14 @@ def create_map_project_at(name: str | None = None, project_path: str | None = No
     _write_project_metadata(entry)
     _save_index(index)
     return entry
+
+
+def create_map_project_at(name: str | None = None, project_path: str | None = None) -> ProjectEntry:
+    return _create_project_at(name=name, project_path=project_path, kind="map")
+
+
+def create_workspace_project_at(name: str | None = None, project_path: str | None = None) -> ProjectEntry:
+    return _create_project_at(name=name, project_path=project_path, kind="workspace")
 
 
 def open_map_project_from_file(map_file_path: str) -> ProjectEntry:
@@ -349,6 +363,49 @@ def open_map_project_from_directory(project_directory: str) -> ProjectEntry:
         suffix += 1
     map_file.touch()
     return open_map_project_from_file(str(map_file))
+
+
+def open_workspace_project_from_directory(project_directory: str) -> ProjectEntry:
+    project_path = Path(project_directory).expanduser().resolve(strict=False)
+    if not project_path.exists() or not project_path.is_dir():
+        raise ValueError("请选择工作区文件夹")
+
+    index = _load_index()
+    _ensure_default_project(index)
+    idx = _entry_index_by_path(index, project_path)
+    now = _now_iso()
+    if idx >= 0:
+        current = _project_from_dict(index["projects"][idx])
+        entry = ProjectEntry(
+            id=current.id,
+            name=current.name or project_path.name or "工作区",
+            path=str(project_path),
+            kind=current.kind or "workspace",
+            created_at=current.created_at or now,
+            last_opened_at=now,
+            hidden=False,
+        )
+        index["projects"][idx] = entry.model_dump()
+    else:
+        project_name = project_path.name or "工作区"
+        project_id = _unique_project_id(
+            index, _safe_project_id(project_name) or f"workspace-{uuid4().hex[:8]}"
+        )
+        entry = ProjectEntry(
+            id=project_id,
+            name=project_name,
+            path=str(project_path),
+            kind="workspace",
+            created_at=now,
+            last_opened_at=now,
+            hidden=False,
+        )
+        index.setdefault("projects", []).append(entry.model_dump())
+
+    index["current_project_id"] = entry.id
+    _write_project_metadata(entry)
+    _save_index(index)
+    return entry
 
 
 def remove_recent_project(project_id: str) -> None:
