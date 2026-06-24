@@ -16,7 +16,13 @@ from fastapi.responses import JSONResponse
 
 from core.runtime_env import load_runtime_env
 from daemon.api import protocol
+from daemon.api import context as context_api
+from daemon.api import files as files_api
+from daemon.api import history as history_api
+from daemon.api import projects as projects_api
 from daemon.api import runs as runs_api
+from daemon.api import settings as settings_api
+from daemon.api import usage as usage_api
 from daemon.locking import HEALTH_PATH, clear_pidfile, write_pidfile
 
 _START_TIME = time.time()
@@ -41,6 +47,12 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(runs_api.router)
+    app.include_router(context_api.router)
+    app.include_router(projects_api.router)
+    app.include_router(history_api.router)
+    app.include_router(files_api.router)
+    app.include_router(settings_api.router)
+    app.include_router(usage_api.router)
 
     @app.get(HEALTH_PATH)
     def health():
