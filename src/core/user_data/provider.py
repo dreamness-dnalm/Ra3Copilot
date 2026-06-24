@@ -367,23 +367,17 @@ def set_models_for_provider(
     model_names: list[str],
     available_models: list[ModelInfo] | None = None,
 ) -> list[ModelConfig]:
+    """Enable exactly the named models for a provider.
+
+    Only the selected models are upserted (enabled=True); models the user did
+    not check are left completely untouched — they are neither added, deleted,
+    nor disabled. This keeps pre-existing model configurations intact while
+    letting the caller add models that may not be in the fetched list.
+    """
     provider = get_provider_config(provider_name)
-    selected_names = set(model_names)
     available = {model.name: model for model in (available_models or [])}
     selected: list[ModelConfig] = []
     reload_model_config_dict()
-
-    if not available:
-        available = {
-            model.name: ModelInfo(
-                name=model.name,
-                context_length=model.context_length,
-                max_tokens=model.max_tokens,
-                support_data_types=model.support_data_types,
-            )
-            for model in model_config_dict.values()
-            if model.provider_name == provider.name
-        }
 
     for name in model_names:
         info = available.get(name) or ModelInfo(name=name)
@@ -401,13 +395,6 @@ def set_models_for_provider(
         )
         model_config_dict[_model_key(provider.name, info.name)] = model_config
         selected.append(model_config)
-
-    managed_names = set(available)
-    for key, model in list(model_config_dict.items()):
-        if model.provider_name == provider.name and model.name in managed_names:
-            if model.name not in selected_names:
-                model.enabled = False
-                model_config_dict[key] = model
 
     save_model_config_dict()
     _repair_active_model()

@@ -5,9 +5,12 @@ one client; multiple windows can each run their own task in parallel. Within a
 single client, starting a new run while one is active is rejected — matching
 the old per-window single-run semantics.
 
-Each run executes in a daemon thread that spins up its own asyncio loop (same
-as before). Streamed chunks are converted to the frozen event schema and
-pushed onto an in-process queue; the window polls them via the runs API.
+Each run executes in a daemon thread that submits its coroutine to a single,
+process-wide event loop (see ``agent_loop``). Reusing one loop keeps the
+AsyncSqliteSaver and cached agents valid across runs — per-run loops would
+break them with "bound to a different event loop". Streamed chunks are
+converted to the frozen event schema and pushed onto an in-process queue; the
+window polls them via the runs API.
 """
 
 from __future__ import annotations
@@ -46,6 +49,7 @@ from daemon.api.protocol import (
     EVENT_TOOL_RESULT,
     TERMINAL_STATUSES,
 )
+from daemon.agent_loop import agent_loop
 from daemon.runtime import (
     LOCAL_SKILL_SUMMARY,
     decode_tool_args,
@@ -205,8 +209,42 @@ class RunSupervisor:
     # -- worker -----------------------------------------------------------
 
     def _run_worker(self, state: RunState, prompt: str) -> None:
+        # All agent coroutines run on a single, long-lived event loop. The
+        # AsyncSqliteSaver (and the cached agents) bind to that loop, so reusing
+        # one loop across runs avoids "bound to a different event loop" errors
+        # that would arise from per-run asyncio.run() creating fresh loops.
         try:
-            asyncio.run(self._run_agent(state, prompt))
+            future = asyncio.run_coroutine_threadsafe(
+                self._run_agent(state, prompt), agent_loop.loop
+            )
+            future.result()
+        except Exception:
+            # The agent coroutine handles its own errors; anything that escapes
+            # here (e.g. loop died) is surfaced as a terminal event below.
+            if state.status not in TERMINAL_STATUSES:
+                trace = "".join(
+                    traceback.format_exception(
+                        Exception, Exception("运行循环异常"), None
+                    )
+                )
+                state.status = "error"
+                state.error = "运行循环异常"
+                state.emit(
+                    {
+                        "type": EVENT_ERROR,
+                        "message": "运行循环异常",
+                        "trace": trace,
+                        "history": [],
+                    }
+                )
+                state.emit(
+                    {
+                        "type": EVENT_DONE,
+                        "status": "error",
+                        "history": [],
+                        "usage": None,
+                    }
+                )
         finally:
             with self._lock:
                 if self._active_by_client.get(state.client_id) == state.run_id:

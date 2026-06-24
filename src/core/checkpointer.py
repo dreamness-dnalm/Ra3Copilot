@@ -1,31 +1,40 @@
 """Shared persistent LangGraph checkpointer.
 
-The SQLite saver keeps agent conversation state in ``user_data/checkpoints.sqlite``
-so that runs survive daemon restarts and can be shared across windows.
+The async SQLite saver keeps agent conversation state in
+``user_data/checkpoints.sqlite`` so that runs survive daemon restarts and can be
+shared across windows.
 
-A single connection is reused for the lifetime of the process. SQLite runs in WAL
-mode (also used by the usage store) so concurrent reads do not block the single
-writer. The saver is created lazily so importing this module is cheap.
+The agent runtime drives the graph with ``astream`` (async streaming), which
+requires an :class:`AsyncSqliteSaver`; the synchronous ``SqliteSaver`` rejects
+async methods. ``AsyncSqliteSaver.__init__`` binds itself to the running event
+loop, so the saver must be constructed lazily from within the loop (the agent
+factories already run inside ``ensure_agent``'s ``asyncio.run``). The connection
+is held for the lifetime of the process and reused across runs.
+
+WAL mode keeps concurrent reads from blocking the writer.
 """
 
 from __future__ import annotations
 
-import sqlite3
 import threading
 from pathlib import Path
 
-from langgraph.checkpoint.sqlite import SqliteSaver
+import aiosqlite
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 from core.user_data import user_data_path
 
 CHECKPOINT_DB_PATH = Path(user_data_path) / "checkpoints.sqlite"
 
 _lock = threading.Lock()
-_saver: SqliteSaver | None = None
+_saver: AsyncSqliteSaver | None = None
 
 
-def get_checkpointer() -> SqliteSaver:
-    """Return the process-wide ``SqliteSaver``, creating it on first use."""
+async def get_checkpointer() -> AsyncSqliteSaver:
+    """Return the process-wide ``AsyncSqliteSaver``, creating it on first use.
+
+    Must be awaited from a running event loop (the saver binds to it).
+    """
     global _saver
     if _saver is not None:
         return _saver
@@ -35,9 +44,9 @@ def get_checkpointer() -> SqliteSaver:
             return _saver
 
         CHECKPOINT_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-        connection = sqlite3.connect(str(CHECKPOINT_DB_PATH), check_same_thread=False)
-        connection.execute("PRAGMA journal_mode=WAL")
-        saver = SqliteSaver(connection)
-        saver.setup()
+        connection = await aiosqlite.connect(str(CHECKPOINT_DB_PATH))
+        await connection.execute("PRAGMA journal_mode=WAL")
+        saver = AsyncSqliteSaver(connection)
+        await saver.setup()
         _saver = saver
         return _saver

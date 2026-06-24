@@ -21,7 +21,7 @@ from pathlib import Path
 from core.user_data import user_data_path
 
 DAEMON_HOST = "127.0.0.1"
-DEFAULT_DAEMON_PORT = 30034  # one above RA3 Companion's 30033
+DEFAULT_DAEMON_PORT = 30035
 PIDFILE_PATH = Path(user_data_path) / "daemon.pid"
 TOKEN_PATH = Path(user_data_path) / "daemon.token"
 

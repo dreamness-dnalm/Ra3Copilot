@@ -90,6 +90,8 @@ def create_app() -> FastAPI:
 def run_server(port: int) -> None:
     import uvicorn
 
+    from desktop.tray import TrayController
+
     write_pidfile(port)
     app = create_app()
     config = uvicorn.Config(
@@ -100,4 +102,19 @@ def run_server(port: int) -> None:
         access_log=False,
     )
     server = uvicorn.Server(config)
-    server.run()
+
+    # The tray lives in the daemon (singleton) process so there is exactly one
+    # icon regardless of how many windows are open. "退出" stops the server,
+    # which lets run_server() return and the process exit.
+    tray = TrayController()
+
+    def _quit_from_tray() -> None:
+        server.should_exit = True
+
+    tray.start(quit_app=_quit_from_tray)
+    try:
+        server.run()
+    finally:
+        tray.stop()
+        clear_pidfile()
+        os._exit(0)

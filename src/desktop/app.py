@@ -12,7 +12,6 @@ uses it to build its getApi() proxy.
 from __future__ import annotations
 
 import argparse
-import socket
 import subprocess
 import sys
 from pathlib import Path

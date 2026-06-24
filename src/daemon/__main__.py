@@ -1,6 +1,6 @@
 """Daemon entry point: ``python -m daemon`` (or the frozen exe with this arg).
 
-Claims a port (preferring the default 30034) and serves the FastAPI app. If the
+Claims a port (preferring the default 30035) and serves the FastAPI app. If the
 default port is busy with a non-daemon process, fall back to a free port; the
 window process discovers the actual port via the pidfile.
 """
@@ -19,7 +19,7 @@ def main(argv: list[str] | None = None) -> None:
         "--port",
         type=int,
         default=DEFAULT_DAEMON_PORT,
-        help="Port to listen on (default 30034).",
+        help="Port to listen on (default 30035).",
     )
     args = parser.parse_args(argv)
     port = find_free_port(args.port)

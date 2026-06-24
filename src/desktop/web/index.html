@@ -3963,7 +3963,7 @@
     // Endpoints marked with "+project"/"+thread"/"+client" auto-inject those.
     const DAEMON_ROUTES = {
       // runs
-      start_run:           { p: "/runs/start",  a: ["text", "options"], inject: ["client","thread","project","mode"] },
+      start_run:           { p: "/runs/start",  a: ["text", "options"], inject: ["client","thread","projectId","mode"] },
       poll_run:            { p: "/runs/poll",   a: ["runId", "maxEvents"] },
       stop_run:            { p: "/runs/stop",   a: ["runId"] },
       // context / agent
@@ -5197,7 +5197,24 @@
         `;
       }).join("");
 
-      projectFileTree.innerHTML = renderNodes(items);
+      // Wrap the top-level entries under a single project-root node (the
+      // project name), which is collapsible like any other folder. "" is the
+      // root's relative path and matches _relative_path() for the root dir.
+      const rootPath = "";
+      const rootName = tree.rootName || state.context.project.name || "工程";
+      const rootExpanded = state.expandedFileFolders.has(rootPath);
+      const rootChildren = rootExpanded
+        ? `<div class="file-tree-children">${renderNodes(items, 1)}</div>`
+        : "";
+      projectFileTree.innerHTML = `
+        <div>
+          <button class="file-tree-row" type="button" data-file-path="${escapeHtml(rootPath)}" data-file-type="folder" aria-expanded="${rootExpanded}">
+            <span class="nav-icon" aria-hidden="true">${rootExpanded ? "▾" : "▸"}</span>
+            <strong>${escapeHtml(rootName)}</strong>
+          </button>
+          ${rootChildren}
+        </div>
+      `;
       projectFileTree.querySelectorAll("[data-file-path]").forEach((button) => {
         button.addEventListener("click", () => {
           if (button.dataset.fileType === "folder") {
@@ -5216,6 +5233,8 @@
 
     function applyFileTree(tree) {
       state.fileTree = tree || { items: [] };
+      // Keep the project root expanded so its contents are visible by default.
+      state.expandedFileFolders.add("");
       renderProjectFileTree();
     }
 
@@ -7263,6 +7282,43 @@
       return { ready: false, error: "守护进程启动超时" };
     }
 
+    // Background health monitor: once the daemon has been reachable, poll its
+    // /health endpoint. If it stays unreachable (the daemon exited), close the
+    // window — there is no backend to serve it. A few consecutive failures are
+    // required to avoid killing the window on a transient network blip.
+    const DAEMON_HEALTH_INTERVAL = 3000;
+    const DAEMON_HEALTH_FAIL_LIMIT = 2;
+    let daemonHealthTimer = null;
+    let daemonHealthFailures = 0;
+    let daemonWasReady = false;
+
+    function startDaemonHealthWatch() {
+      if (daemonHealthTimer) return;
+      daemonWasReady = true;
+      daemonHealthTimer = window.setInterval(pollDaemonHealth, DAEMON_HEALTH_INTERVAL);
+    }
+
+    async function pollDaemonHealth() {
+      if (!daemonWasReady || !DAEMON_BASE_URL) return;
+      try {
+        const res = await fetch(DAEMON_BASE_URL + "/health", { method: "GET" });
+        if (res.ok) {
+          daemonHealthFailures = 0;
+          return;
+        }
+        throw new Error("health " + res.status);
+      } catch (err) {
+        daemonHealthFailures += 1;
+        if (daemonHealthFailures >= DAEMON_HEALTH_FAIL_LIMIT) {
+          if (daemonHealthTimer) { window.clearInterval(daemonHealthTimer); daemonHealthTimer = null; }
+          const bridge = localBridge();
+          if (bridge && typeof bridge.close_window === "function") {
+            bridge.close_window();
+          }
+        }
+      }
+    }
+
     async function loadContext(updateStatus = true) {
       const daemon = await ensureDaemon();
       if (!daemon.ready) {
@@ -7278,6 +7334,7 @@
       try {
         await loadProjects().catch((error) => showToast(error.message || String(error)));
         applyContext(await api.get_context(), updateStatus);
+        startDaemonHealthWatch();
         await loadConversationUsage().catch((error) => showToast(error.message || String(error)));
         await loadHistory().catch((error) => showToast(error.message || String(error)));
         if (!state.settingsLoadedFromBridge) {
@@ -7431,6 +7488,24 @@
       if (!api) {
         showToast("桌面桥尚未就绪");
         return;
+      }
+      // Ensure a conversation thread exists before submitting. Opening a
+      // project returns a context without a threadId, so a user who types
+      // straight into a freshly opened project would otherwise send an empty
+      // threadId and the daemon rejects it ("对话 ID 不能为空").
+      const currentThread = state.context && state.context.threadId;
+      if (!currentThread) {
+        try {
+          const created = await api.new_chat();
+          if (created && created.ok && created.threadId) {
+            if (!state.context) state.context = {};
+            state.context.threadId = created.threadId;
+            if (created.history) applyHistorySnapshot(created.history);
+          }
+        } catch (error) {
+          showToast(error?.message || "无法创建对话");
+          return;
+        }
       }
       appendUserMessage(text);
       appendAssistantMessage("运行中");
@@ -7655,7 +7730,11 @@
       if (api) {
         const result = await api.new_chat();
         if (result.ok) {
-          applyContext(result.context);
+          // /history/new returns {threadId, history} but no context object;
+          // fold the new thread id into the existing context instead.
+          if (result.threadId && state.context) {
+            state.context.threadId = result.threadId;
+          }
           if (result.history) applyHistorySnapshot(result.history);
           await loadConversationUsage(true).catch((error) => showToast(error.message || String(error)));
         }

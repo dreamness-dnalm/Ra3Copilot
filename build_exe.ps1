@@ -21,6 +21,8 @@ try {
         --windowed `
         --onefile `
         --name Ra3Copilot `
+        --collect-submodules pystray `
+        --collect-submodules PIL `
         --add-data "desktop/web;desktop/web" `
         --add-data "core/prompts;core/prompts" `
         desktop\app.py

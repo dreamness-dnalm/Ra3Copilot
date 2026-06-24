@@ -150,34 +150,46 @@ def prompt_for_policy(prompt: str, policy: str) -> str:
 # Agent cache
 # ---------------------------------------------------------------------------
 
-_agents: dict[str, object] = {}
+_agents: dict[tuple[str, str], object] = {}
 _agent_lock = threading.Lock()
 
 
 async def ensure_agent(state) -> object:
-    """Return the cached agent for ``state.agent_mode``, building it lazily.
+    """Return the cached agent for ``(state.agent_mode, state.project_id)``.
 
-    ``state`` must expose ``agent_mode`` and an ``emit(event)`` method so we can
-    stream init-status events to the client.
+    The agent's filesystem backend is rooted at the project directory, so the
+    cache is keyed by both mode and project — switching projects builds a fresh
+    agent with a correctly-rooted backend. ``state`` must expose ``agent_mode``,
+    ``project_id`` and an ``emit(event)`` method for streaming init status.
     """
+    from core.user_data.projects import DEFAULT_PROJECT_ID, open_project
+
     agent_mode = normalize_agent_mode(state.agent_mode)
-    cached = _agents.get(agent_mode)
+    project_id = state.project_id or DEFAULT_PROJECT_ID
+    cache_key = (agent_mode, project_id)
+
+    cached = _agents.get(cache_key)
     if cached is not None:
         return cached
+
+    project = open_project(project_id)
+    project_path = str(getattr(project, "path", "") or "").strip()
+    if not project_path:
+        raise RuntimeError(f"工程路径为空：{project_id}")
 
     label = "万能 Agent" if agent_mode == "universal" else "RA3 Agent"
     state.emit({"type": "status", "text": f"正在初始化 {label}..."})
     with _agent_lock:
-        needs_init = agent_mode not in _agents
+        needs_init = cache_key not in _agents
     if needs_init:
         if agent_mode == "universal":
-            agent = await create_universal_agent()
+            agent = await create_universal_agent(project_path)
         else:
-            agent = await create_ra3_csharp_writer_agent()
+            agent = await create_ra3_csharp_writer_agent(project_path)
         with _agent_lock:
-            _agents[agent_mode] = agent
+            _agents[cache_key] = agent
     state.emit({"type": "status", "text": "Agent 已就绪。"})
-    return _agents[agent_mode]
+    return _agents[cache_key]
 
 
 def reset_agents() -> None:
@@ -191,4 +203,5 @@ def reset_agents() -> None:
 
 
 def agent_ready(agent_mode: str) -> bool:
-    return normalize_agent_mode(agent_mode) in _agents
+    mode = normalize_agent_mode(agent_mode)
+    return any(key[0] == mode for key in _agents)
