@@ -7,3 +7,6 @@ src/dist/
 src/*.spec
 .env.local
 src/.env.local
+
+# Local agent/workspace scratch
+.agents/
