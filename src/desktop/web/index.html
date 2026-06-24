@@ -3949,8 +3949,183 @@
     };
     let selectedPermissionPolicy = "once";
 
-    function getApi() {
+    // --- Daemon HTTP client ------------------------------------------------
+    // The frontend talks to the local daemon directly via fetch. getApi()
+    // returns a Proxy whose properties are async functions, so existing
+    // call sites (api.start_run(text, {...}), api.get_settings(), ...) keep
+    // working unchanged. Each legacy method name maps to a daemon endpoint;
+    // positional args are bound to the listed keys, and project/threadId/
+    // clientId are auto-injected from window state so call sites need no edit.
+    const DAEMON_CLIENT_ID = "c-" + Math.random().toString(36).slice(2, 10);
+    let DAEMON_BASE_URL = "";
+
+    // methodName -> { p: endpoint path, a: [positional arg keys] }
+    // Endpoints marked with "+project"/"+thread"/"+client" auto-inject those.
+    const DAEMON_ROUTES = {
+      // runs
+      start_run:           { p: "/runs/start",  a: ["text", "options"], inject: ["client","thread","projectId","mode"] },
+      poll_run:            { p: "/runs/poll",   a: ["runId", "maxEvents"] },
+      stop_run:            { p: "/runs/stop",   a: ["runId"] },
+      // context / agent
+      get_context:         { p: "/context",     a: [], inject: ["project","thread","mode"] },
+      set_agent_mode:      { p: "/agent/mode",  a: ["agentMode"], inject: ["project","thread"] },
+      // projects
+      get_projects:        { p: "/projects/list", a: ["projectId"] },
+      open_project:        { p: "/projects/open", a: ["projectId"] },
+      create_project:      { p: "/projects/create-map", a: ["name", "projectPath"] },
+      create_workspace_project: { p: "/projects/create-workspace", a: ["name", "projectPath"] },
+      open_map_project_file: { p: "/projects/open-map-from-path", a: ["path"] },
+      open_workspace_project_directory: { p: "/projects/open-workspace-from-path", a: ["path"] },
+      remove_recent_project: { p: "/projects/remove-recent", a: ["projectId"], inject: ["currentProject"] },
+      // history
+      get_history:         { p: "/history/list",  a: [], inject: ["project"] },
+      new_chat:            { p: "/history/new",   a: [], inject: ["client","project"] },
+      open_chat:           { p: "/history/open",  a: ["conversationId"], inject: ["client","project"] },
+      delete_chat:         { p: "/history/delete",a: ["conversationId"], inject: ["client","project"] },
+      // files
+      get_project_files:   { p: "/files/tree",   a: [], inject: ["project"] },
+      read_project_file:   { p: "/files/read",   a: ["path"], inject: ["project"] },
+      save_project_file:   { p: "/files/save",   a: ["path", "content", "encoding"], inject: ["project"] },
+      create_project_item: { p: "/files/create", a: ["parentPath", "name", "kind"], inject: ["project"] },
+      rename_project_item: { p: "/files/rename", a: ["path", "newName"], inject: ["project"] },
+      delete_project_item: { p: "/files/delete", a: ["path"], inject: ["project"] },
+      // settings
+      get_settings:        { p: "/settings/get", a: [] },
+      save_provider:       { p: "/settings/provider/save", a: ["provider", "originalName"] },
+      delete_provider:     { p: "/settings/provider/delete", a: ["providerName"] },
+      test_provider:       { p: "/settings/provider/test", a: ["providerName"] },
+      fetch_provider_models: { p: "/settings/provider/fetch-models", a: ["providerName"] },
+      enable_provider_models: { p: "/settings/provider/enable-models", a: ["providerName", "modelNames", "availableModels"] },
+      save_model:          { p: "/settings/model/save", a: ["model"] },
+      delete_model:        { p: "/settings/model/delete", a: ["providerName", "modelName"] },
+      set_active_model:    { p: "/settings/model/set-active", a: ["providerName", "modelName"] },
+      save_observability:  { p: "/settings/observability/save", a: ["observability"] },
+      // usage
+      get_usage_summary:   { p: "/usage/summary", a: ["days"] },
+      get_conversation_usage: { p: "/usage/conversation", a: ["conversationId"] },
+      // window/local (handled by pywebview bridge, not daemon)
+      minimize_window:     { local: true },
+      toggle_maximize_window: { local: true },
+      close_window:        { local: true },
+      resize_window_by:    { local: true },
+      open_new_window:     { local: true },
+    };
+
+    function currentProjectBody() {
+      return (state.context && state.context.project) ? state.context.project : null;
+    }
+
+    function applyInjection(body, inject) {
+      if (!inject) return;
+      for (const tag of inject) {
+        if (tag === "project" && body.project === undefined) body.project = currentProjectBody();
+        else if (tag === "projectId" && body.projectId === undefined) {
+          const p = currentProjectBody(); if (p) body.projectId = p.id;
+        }
+        else if (tag === "currentProject" && body.currentProject === undefined) body.currentProject = currentProjectBody();
+        else if (tag === "thread" && body.threadId === undefined) body.threadId = (state.context && state.context.threadId) || "";
+        else if (tag === "client" && body.clientId === undefined) body.clientId = DAEMON_CLIENT_ID;
+        else if (tag === "mode" && body.agentMode === undefined) body.agentMode = state.agentMode;
+      }
+    }
+
+    function localBridge() {
       return window.pywebview && window.pywebview.api ? window.pywebview.api : null;
+    }
+
+    function getApi() {
+      return new Proxy({}, {
+        get(_target, method) {
+          if (typeof method !== "string") return undefined;
+          return async function (...args) {
+            const route = DAEMON_ROUTES[method];
+            // Local window operations go to the pywebview bridge.
+            if (route && route.local) {
+              const bridge = localBridge();
+              if (!bridge || typeof bridge[method] !== "function") {
+                return { ok: false, error: "桌面桥尚未就绪" };
+              }
+              return bridge[method](...args);
+            }
+            // Native dialog + OS-open helpers (kept on the bridge).
+            if (method === "choose_project_directory") {
+              const bridge = localBridge();
+              if (!bridge || typeof bridge.choose_directory !== "function") {
+                return { ok: false, error: "窗口尚未就绪" };
+              }
+              return bridge.choose_directory(args[0]);
+            }
+            // open_map_project_file() / open_workspace_project_directory() with no
+            // arg keep the old "pick then open" behaviour: trigger the native
+            // picker here, then forward the chosen path to the daemon.
+            if (method === "open_map_project_file" || method === "open_workspace_project_directory") {
+              let chosen = args[0];
+              if (!chosen) {
+                const bridge = localBridge();
+                if (!bridge || typeof bridge.choose_directory !== "function") {
+                  return { ok: false, error: "窗口尚未就绪" };
+                }
+                const picked = await bridge.choose_directory();
+                if (!picked.ok) return picked;
+                if (picked.cancelled) return { ok: true, cancelled: true };
+                chosen = picked.path;
+              }
+              const route = DAEMON_ROUTES[method];
+              if (!DAEMON_BASE_URL) return { ok: false, error: "守护进程尚未就绪" };
+              try {
+                const res = await fetch(DAEMON_BASE_URL + route.p, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ path: chosen })
+                });
+                return await res.json();
+              } catch (err) {
+                return { ok: false, error: "守护进程请求失败：" + (err && err.message ? err.message : err) };
+              }
+            }
+            if (method === "open_project_folder") {
+              const bridge = localBridge();
+              const p = currentProjectBody();
+              return bridge && bridge.open_project_folder ? bridge.open_project_folder(p && p.path) : { ok: false, error: "窗口尚未就绪" };
+            }
+            if (method === "open_project_terminal") {
+              const bridge = localBridge();
+              const p = currentProjectBody();
+              return bridge && bridge.open_project_terminal ? bridge.open_project_terminal(p && p.path) : { ok: false, error: "窗口尚未就绪" };
+            }
+            // Daemon route.
+            if (!route) {
+              return { ok: false, error: "未知的接口：" + method };
+            }
+            if (!DAEMON_BASE_URL) {
+              return { ok: false, error: "守护进程尚未就绪" };
+            }
+            const body = {};
+            route.a.forEach((key, i) => {
+              if (args[i] !== undefined) {
+                if (key === "options" && typeof args[i] === "object" && args[i]) {
+                  const opt = args[i];
+                  if (opt.permissionPolicy !== undefined) body.permissionPolicy = opt.permissionPolicy;
+                  if (opt.agentMode !== undefined) body.agentMode = opt.agentMode;
+                } else {
+                  body[key] = args[i];
+                }
+              }
+            });
+            applyInjection(body, route.inject);
+            try {
+              const res = await fetch(DAEMON_BASE_URL + route.p, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body)
+              });
+              return await res.json();
+            } catch (err) {
+              return { ok: false, error: "守护进程请求失败：" + (err && err.message ? err.message : err) };
+            }
+          };
+        }
+      });
     }
 
     function normalizeAgentMode(mode) {
@@ -5022,7 +5197,24 @@
         `;
       }).join("");
 
-      projectFileTree.innerHTML = renderNodes(items);
+      // Wrap the top-level entries under a single project-root node (the
+      // project name), which is collapsible like any other folder. "" is the
+      // root's relative path and matches _relative_path() for the root dir.
+      const rootPath = "";
+      const rootName = tree.rootName || state.context.project.name || "工程";
+      const rootExpanded = state.expandedFileFolders.has(rootPath);
+      const rootChildren = rootExpanded
+        ? `<div class="file-tree-children">${renderNodes(items, 1)}</div>`
+        : "";
+      projectFileTree.innerHTML = `
+        <div>
+          <button class="file-tree-row" type="button" data-file-path="${escapeHtml(rootPath)}" data-file-type="folder" aria-expanded="${rootExpanded}">
+            <span class="nav-icon" aria-hidden="true">${rootExpanded ? "▾" : "▸"}</span>
+            <strong>${escapeHtml(rootName)}</strong>
+          </button>
+          ${rootChildren}
+        </div>
+      `;
       projectFileTree.querySelectorAll("[data-file-path]").forEach((button) => {
         button.addEventListener("click", () => {
           if (button.dataset.fileType === "folder") {
@@ -5041,6 +5233,8 @@
 
     function applyFileTree(tree) {
       state.fileTree = tree || { items: [] };
+      // Keep the project root expanded so its contents are visible by default.
+      state.expandedFileFolders.add("");
       renderProjectFileTree();
     }
 
@@ -7064,19 +7258,83 @@
       permissionCommand.textContent = commandByPolicy[policy];
     }
 
+    async function ensureDaemon() {
+      // Ask the window bridge to discover/spawn the daemon, retry until ready.
+      const bridge = localBridge();
+      if (!bridge || typeof bridge.get_daemon_info !== "function") {
+        return { ready: false, error: "桌面桥尚未就绪" };
+      }
+      for (let attempt = 0; attempt < 40; attempt++) {
+        try {
+          const info = await bridge.get_daemon_info();
+          if (info && info.ready && info.baseUrl) {
+            DAEMON_BASE_URL = info.baseUrl;
+            return { ready: true };
+          }
+          if (info && info.error) {
+            return { ready: false, error: info.error };
+          }
+        } catch (err) {
+          // bridge may not be injected yet; keep retrying
+        }
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+      return { ready: false, error: "守护进程启动超时" };
+    }
+
+    // Background health monitor: once the daemon has been reachable, poll its
+    // /health endpoint. If it stays unreachable (the daemon exited), close the
+    // window — there is no backend to serve it. A few consecutive failures are
+    // required to avoid killing the window on a transient network blip.
+    const DAEMON_HEALTH_INTERVAL = 3000;
+    const DAEMON_HEALTH_FAIL_LIMIT = 2;
+    let daemonHealthTimer = null;
+    let daemonHealthFailures = 0;
+    let daemonWasReady = false;
+
+    function startDaemonHealthWatch() {
+      if (daemonHealthTimer) return;
+      daemonWasReady = true;
+      daemonHealthTimer = window.setInterval(pollDaemonHealth, DAEMON_HEALTH_INTERVAL);
+    }
+
+    async function pollDaemonHealth() {
+      if (!daemonWasReady || !DAEMON_BASE_URL) return;
+      try {
+        const res = await fetch(DAEMON_BASE_URL + "/health", { method: "GET" });
+        if (res.ok) {
+          daemonHealthFailures = 0;
+          return;
+        }
+        throw new Error("health " + res.status);
+      } catch (err) {
+        daemonHealthFailures += 1;
+        if (daemonHealthFailures >= DAEMON_HEALTH_FAIL_LIMIT) {
+          if (daemonHealthTimer) { window.clearInterval(daemonHealthTimer); daemonHealthTimer = null; }
+          const bridge = localBridge();
+          if (bridge && typeof bridge.close_window === "function") {
+            bridge.close_window();
+          }
+        }
+      }
+    }
+
     async function loadContext(updateStatus = true) {
-      const api = getApi();
-      if (!api) {
-        runStatusLabel.textContent = "等待桌面桥";
+      const daemon = await ensureDaemon();
+      if (!daemon.ready) {
+        runStatusLabel.textContent = "等待守护进程";
+        showToast(daemon.error || "守护进程未就绪");
         await loadProjects().catch(() => applyProjectsSnapshot(previewProjectsSnapshot()));
         applyHistorySnapshot([]);
         setBusy(false);
         sendBtn.disabled = true;
         return;
       }
+      const api = getApi();
       try {
         await loadProjects().catch((error) => showToast(error.message || String(error)));
         applyContext(await api.get_context(), updateStatus);
+        startDaemonHealthWatch();
         await loadConversationUsage().catch((error) => showToast(error.message || String(error)));
         await loadHistory().catch((error) => showToast(error.message || String(error)));
         if (!state.settingsLoadedFromBridge) {
@@ -7084,7 +7342,7 @@
         }
         setBusy(false);
       } catch (error) {
-        runStatusLabel.textContent = "桥接失败";
+        runStatusLabel.textContent = "守护进程连接失败";
         showToast(String(error));
       }
     }
@@ -7230,6 +7488,24 @@
       if (!api) {
         showToast("桌面桥尚未就绪");
         return;
+      }
+      // Ensure a conversation thread exists before submitting. Opening a
+      // project returns a context without a threadId, so a user who types
+      // straight into a freshly opened project would otherwise send an empty
+      // threadId and the daemon rejects it ("对话 ID 不能为空").
+      const currentThread = state.context && state.context.threadId;
+      if (!currentThread) {
+        try {
+          const created = await api.new_chat();
+          if (created && created.ok && created.threadId) {
+            if (!state.context) state.context = {};
+            state.context.threadId = created.threadId;
+            if (created.history) applyHistorySnapshot(created.history);
+          }
+        } catch (error) {
+          showToast(error?.message || "无法创建对话");
+          return;
+        }
       }
       appendUserMessage(text);
       appendAssistantMessage("运行中");
@@ -7454,7 +7730,11 @@
       if (api) {
         const result = await api.new_chat();
         if (result.ok) {
-          applyContext(result.context);
+          // /history/new returns {threadId, history} but no context object;
+          // fold the new thread id into the existing context instead.
+          if (result.threadId && state.context) {
+            state.context.threadId = result.threadId;
+          }
           if (result.history) applyHistorySnapshot(result.history);
           await loadConversationUsage(true).catch((error) => showToast(error.message || String(error)));
         }
