@@ -1,6 +1,6 @@
 from deepagents import create_deep_agent
-from langgraph.checkpoint.memory import InMemorySaver
 
+from core.checkpointer import get_checkpointer
 from core.middlewares.configurable_model import configurable_model
 from core.runtime_env import load_runtime_env
 
@@ -26,5 +26,5 @@ async def create_universal_agent():
         system_prompt=_SYSTEM_PROMPT,
         middleware=[configurable_model],
         tools=[],
-        checkpointer=InMemorySaver(),
+        checkpointer=get_checkpointer(),
     )

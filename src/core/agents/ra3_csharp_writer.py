@@ -1,8 +1,8 @@
 from pathlib import Path
 
 from deepagents import create_deep_agent
-from langgraph.checkpoint.memory import InMemorySaver
 
+from core.checkpointer import get_checkpointer
 from core.middlewares.configurable_model import configurable_model
 from core.runtime_env import load_runtime_env
 from core.tools.ra3_companion import load_ra3_companion_tools
@@ -31,5 +31,5 @@ async def create_ra3_csharp_writer_agent():
         system_prompt=_load_system_prompt(),
         middleware=[configurable_model],
         tools=tools,
-        checkpointer=InMemorySaver(),
+        checkpointer=get_checkpointer(),
     )
