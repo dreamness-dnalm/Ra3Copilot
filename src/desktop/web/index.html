@@ -2952,6 +2952,10 @@
                 <span class="nav-icon" aria-hidden="true">▦</span>
                 <span>Usage</span>
               </button>
+              <button class="settings-tab-btn" type="button" data-settings-tab="observability">
+                <span class="nav-icon" aria-hidden="true">◌</span>
+                <span>观测</span>
+              </button>
             </div>
           </aside>
 
@@ -3205,6 +3209,67 @@
                 <div class="settings-panel">
                   <div class="settings-row block">
                     <div class="settings-list" id="usageModelList"></div>
+                  </div>
+                </div>
+              </section>
+            </section>
+
+            <section class="settings-page" id="observabilitySettingsPage" hidden>
+              <header class="settings-title">
+                <h1>观测</h1>
+                <p>开启后会把后续 Agent run 发送到 LangSmith，便于查看链路、工具调用和模型耗时。</p>
+              </header>
+
+              <section class="settings-section">
+                <h2 class="section-heading">LangSmith</h2>
+                <div class="settings-panel">
+                  <div class="settings-row">
+                    <div class="settings-row-label">
+                      <strong>启用观测</strong>
+                      <span>默认关闭；保存后从下一轮对话开始生效。</span>
+                    </div>
+                    <div class="settings-control">
+                      <label class="settings-switch">
+                        <input id="observabilityEnabledInput" type="checkbox" />
+                        <span>开启</span>
+                      </label>
+                    </div>
+                  </div>
+                  <div class="settings-row">
+                    <div class="settings-row-label">
+                      <strong>LangSmith URL</strong>
+                      <span>例如 https://apac.api.smith.langchain.com</span>
+                    </div>
+                    <div class="settings-control">
+                      <input class="settings-input" id="observabilityEndpointInput" type="url" placeholder="https://apac.api.smith.langchain.com" />
+                    </div>
+                  </div>
+                  <div class="settings-row">
+                    <div class="settings-row-label">
+                      <strong>Token</strong>
+                      <span>LangSmith API Key，仅保存在本机用户配置中。</span>
+                    </div>
+                    <div class="settings-control">
+                      <input class="settings-input" id="observabilityApiKeyInput" type="password" autocomplete="off" placeholder="lsv2_..." />
+                    </div>
+                  </div>
+                  <div class="settings-row">
+                    <div class="settings-row-label">
+                      <strong>Project</strong>
+                      <span>LangSmith 项目名，用于聚合本软件的 run。</span>
+                    </div>
+                    <div class="settings-control">
+                      <input class="settings-input" id="observabilityProjectInput" type="text" placeholder="ra3-copilot" />
+                    </div>
+                  </div>
+                  <div class="settings-row">
+                    <div class="settings-row-label">
+                      <strong>状态</strong>
+                      <span id="observabilityStatusText">观测默认关闭。</span>
+                    </div>
+                    <div class="settings-actions">
+                      <button class="primary-btn" type="button" id="saveObservabilityBtn">保存观测设置</button>
+                    </div>
                   </div>
                 </div>
               </section>
@@ -3544,6 +3609,7 @@
     const providersSettingsPage = document.getElementById("providersSettingsPage");
     const modelsSettingsPage = document.getElementById("modelsSettingsPage");
     const usageSettingsPage = document.getElementById("usageSettingsPage");
+    const observabilitySettingsPage = document.getElementById("observabilitySettingsPage");
     const providerPresetSelect = document.getElementById("providerPresetSelect");
     const providerNameInput = document.getElementById("providerNameInput");
     const providerBaseUrlInput = document.getElementById("providerBaseUrlInput");
@@ -3590,6 +3656,12 @@
     const usageMetricButtons = Array.from(document.querySelectorAll("[data-usage-metric]"));
     const usageDisplayToggle = document.getElementById("usageDisplayToggle");
     const usageModelList = document.getElementById("usageModelList");
+    const observabilityEnabledInput = document.getElementById("observabilityEnabledInput");
+    const observabilityEndpointInput = document.getElementById("observabilityEndpointInput");
+    const observabilityApiKeyInput = document.getElementById("observabilityApiKeyInput");
+    const observabilityProjectInput = document.getElementById("observabilityProjectInput");
+    const observabilityStatusText = document.getElementById("observabilityStatusText");
+    const saveObservabilityBtn = document.getElementById("saveObservabilityBtn");
     const SETTINGS_CACHE_KEY = "ra3copilot.settingsSnapshot.v1";
     const USAGE_DISPLAY_KEY = "ra3copilot.showUsageDetails.v1";
     let selectedPermissionPolicy = "once";
@@ -5393,6 +5465,12 @@
         activeModel: {
           provider_name: "DeepSeek 官方",
           name: "deepseek-chat"
+        },
+        observability: {
+          enabled: false,
+          langsmith_endpoint: "https://apac.api.smith.langchain.com",
+          langsmith_api_key: "",
+          langsmith_project: "ra3-copilot"
         }
       };
     }
@@ -5834,6 +5912,37 @@
       showToast("已设为默认模型");
     }
 
+    function observabilityConfig() {
+      return state.settings?.observability || previewSettingsSnapshot().observability;
+    }
+
+    function maskedSecretState(value) {
+      if (!value) return "未配置";
+      if (String(value).toLowerCase().includes("your-api-key")) return "占位符";
+      return "已配置";
+    }
+
+    function renderObservabilitySettings() {
+      const config = observabilityConfig();
+      observabilityEnabledInput.checked = Boolean(config.enabled);
+      observabilityEndpointInput.value = config.langsmith_endpoint || "https://apac.api.smith.langchain.com";
+      observabilityApiKeyInput.value = config.langsmith_api_key || "";
+      observabilityProjectInput.value = config.langsmith_project || "ra3-copilot";
+      const stateText = config.enabled
+        ? `已开启 · Token ${maskedSecretState(config.langsmith_api_key)}`
+        : "已关闭 · 后续 run 不会发送到 LangSmith";
+      observabilityStatusText.textContent = stateText;
+    }
+
+    function currentObservabilityPayload() {
+      return {
+        enabled: observabilityEnabledInput.checked,
+        langsmith_endpoint: observabilityEndpointInput.value.trim() || "https://apac.api.smith.langchain.com",
+        langsmith_api_key: observabilityApiKeyInput.value.trim(),
+        langsmith_project: observabilityProjectInput.value.trim() || "ra3-copilot"
+      };
+    }
+
     function renderSettings() {
       renderProviderPresets();
       const providers = state.settings?.providers || [];
@@ -5846,6 +5955,7 @@
       }
       renderFetchedModels();
       renderModelList();
+      renderObservabilitySettings();
       syncRuntimeModelFromSettings();
       renderChatModelSelect();
     }
@@ -6055,6 +6165,7 @@
       providersSettingsPage.hidden = tab !== "providers";
       modelsSettingsPage.hidden = tab !== "models";
       usageSettingsPage.hidden = tab !== "usage";
+      observabilitySettingsPage.hidden = tab !== "observability";
       if (tab === "usage") {
         loadUsageSummary().catch((error) => showToast(error.message || String(error)));
       }
@@ -7096,6 +7207,25 @@
 
     usageDisplayToggle.addEventListener("change", () => {
       setUsageDisplayPreference(usageDisplayToggle.checked);
+    });
+
+    saveObservabilityBtn.addEventListener("click", async () => {
+      const payload = currentObservabilityPayload();
+      if (payload.enabled && !payload.langsmith_api_key) {
+        showToast("开启观测需要填写 Token");
+        observabilityApiKeyInput.focus();
+        return;
+      }
+      saveObservabilityBtn.disabled = true;
+      observabilityStatusText.textContent = "正在保存观测设置...";
+      const result = await callSettingsApi("save_observability", payload);
+      saveObservabilityBtn.disabled = false;
+      if (!result) {
+        observabilityStatusText.textContent = "保存失败，请检查配置。";
+        return;
+      }
+      renderObservabilitySettings();
+      showToast(payload.enabled ? "观测已开启，下一轮对话生效" : "观测已关闭");
     });
 
     newModelBtn.addEventListener("click", beginCreateModel);

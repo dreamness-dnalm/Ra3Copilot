@@ -106,6 +106,12 @@ def load_runtime_env() -> None:
     for path in _env_paths():
         _load_env_file(path, protected_keys)
     _apply_langsmith_compat()
+    try:
+        from core.user_data.config import apply_observability_env
+
+        apply_observability_env()
+    except Exception:
+        pass
     _ENV_LOADED = True
 
 
@@ -127,8 +133,14 @@ def _is_placeholder_secret(value: str | None) -> bool:
 
 def get_langsmith_status() -> dict[str, str | bool]:
     load_runtime_env()
+    try:
+        from core.user_data.config import get_observability_config
+
+        observability = get_observability_config()
+    except Exception:
+        observability = {}
     api_key = os.environ.get("LANGSMITH_API_KEY") or os.environ.get("LANGCHAIN_API_KEY")
-    tracing = _env_bool("LANGSMITH_TRACING") or _env_bool("LANGCHAIN_TRACING_V2")
+    tracing = bool(observability.get("enabled", False))
     placeholder = _is_placeholder_secret(api_key)
     if api_key and not placeholder:
         api_key_state = "configured"
@@ -139,10 +151,12 @@ def get_langsmith_status() -> dict[str, str | bool]:
 
     return {
         "tracing": tracing,
-        "endpoint": os.environ.get("LANGSMITH_ENDPOINT")
+        "endpoint": str(observability.get("langsmith_endpoint") or "")
+        or os.environ.get("LANGSMITH_ENDPOINT")
         or os.environ.get("LANGCHAIN_ENDPOINT")
         or "",
-        "project": os.environ.get("LANGSMITH_PROJECT")
+        "project": str(observability.get("langsmith_project") or "")
+        or os.environ.get("LANGSMITH_PROJECT")
         or os.environ.get("LANGCHAIN_PROJECT")
         or "",
         "apiKeyState": api_key_state,

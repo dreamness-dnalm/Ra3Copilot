@@ -20,7 +20,11 @@ from webview.window import FixPoint
 
 from core.agents.ra3_csharp_writer import create_ra3_csharp_writer_agent
 from core.runtime_env import get_langsmith_status, load_runtime_env
-from core.user_data.config import get_active_model
+from core.user_data.config import (
+    get_active_model,
+    get_observability_config,
+    set_observability_config,
+)
 from core.user_data.history import (
     append_message,
     delete_conversation,
@@ -433,9 +437,14 @@ class DesktopBridge:
             "ra3Companion": _ra3_companion_status(),
         }
 
+    def _settings_snapshot(self) -> dict:
+        settings = settings_snapshot()
+        settings["observability"] = get_observability_config()
+        return settings
+
     def get_settings(self) -> dict:
         try:
-            return {"ok": True, "settings": settings_snapshot()}
+            return {"ok": True, "settings": self._settings_snapshot()}
         except Exception as exc:
             return {"ok": False, "error": str(exc)}
 
@@ -614,7 +623,7 @@ class DesktopBridge:
             else:
                 add_provider_config(config)
             self._reset_agent()
-            return {"ok": True, "settings": settings_snapshot(), "context": self.get_context()}
+            return {"ok": True, "settings": self._settings_snapshot(), "context": self.get_context()}
         except Exception as exc:
             return {"ok": False, "error": str(exc)}
 
@@ -622,14 +631,14 @@ class DesktopBridge:
         try:
             remove_provider_config(provider_name)
             self._reset_agent()
-            return {"ok": True, "settings": settings_snapshot()}
+            return {"ok": True, "settings": self._settings_snapshot()}
         except Exception as exc:
             return {"ok": False, "error": str(exc)}
 
     def test_provider(self, provider_name: str) -> dict:
         try:
             result = test_provider_connection(provider_name)
-            result["settings"] = settings_snapshot()
+            result["settings"] = self._settings_snapshot()
             return result
         except Exception as exc:
             return {"ok": False, "error": str(exc)}
@@ -641,7 +650,7 @@ class DesktopBridge:
             return {
                 "ok": True,
                 "models": [model.model_dump() for model in models],
-                "settings": settings_snapshot(),
+                "settings": self._settings_snapshot(),
             }
         except Exception as exc:
             return {"ok": False, "error": str(exc)}
@@ -665,7 +674,7 @@ class DesktopBridge:
             ]
             set_models_for_provider(provider_name, model_names, model_infos)
             self._reset_agent()
-            return {"ok": True, "settings": settings_snapshot()}
+            return {"ok": True, "settings": self._settings_snapshot()}
         except Exception as exc:
             return {"ok": False, "error": str(exc)}
 
@@ -691,7 +700,15 @@ class DesktopBridge:
             if model.get("active"):
                 set_active_configured_model(config.provider_name, config.name)
             self._reset_agent()
-            return {"ok": True, "settings": settings_snapshot()}
+            return {"ok": True, "settings": self._settings_snapshot()}
+        except Exception as exc:
+            return {"ok": False, "error": str(exc)}
+
+    def save_observability(self, observability: dict) -> dict:
+        try:
+            set_observability_config(observability or {})
+            self._reset_agent()
+            return {"ok": True, "settings": self._settings_snapshot(), "context": self.get_context()}
         except Exception as exc:
             return {"ok": False, "error": str(exc)}
 
@@ -699,7 +716,7 @@ class DesktopBridge:
         try:
             remove_model_config(provider_name, model_name)
             self._reset_agent()
-            return {"ok": True, "settings": settings_snapshot()}
+            return {"ok": True, "settings": self._settings_snapshot()}
         except Exception as exc:
             return {"ok": False, "error": str(exc)}
 
@@ -707,7 +724,7 @@ class DesktopBridge:
         try:
             set_active_configured_model(provider_name, model_name)
             self._reset_agent()
-            return {"ok": True, "settings": settings_snapshot(), "context": self.get_context()}
+            return {"ok": True, "settings": self._settings_snapshot(), "context": self.get_context()}
         except Exception as exc:
             return {"ok": False, "error": str(exc)}
 
