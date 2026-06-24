@@ -1,4 +1,9 @@
 import os
+from pathlib import Path
 
 
-user_data_path = os.path.join(os.environ["APPDATA"], 'Ra3Copilot')
+_appdata = os.environ.get("APPDATA")
+if not _appdata:
+    _appdata = str(Path.home() / "AppData" / "Roaming")
+
+user_data_path = os.path.join(_appdata, 'Ra3Copilot')
