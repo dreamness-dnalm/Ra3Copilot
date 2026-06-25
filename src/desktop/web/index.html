@@ -323,8 +323,13 @@
       min-height: 0;
       overflow: hidden;
       display: grid;
-      grid-template-columns: 272px minmax(640px, 1fr);
+      grid-template-columns: 272px minmax(0, 1fr) auto;
       background: var(--surface);
+    }
+
+    /* Panel hidden: collapse the third column to 0. */
+    .workspace.panel-hidden {
+      grid-template-columns: 272px minmax(0, 1fr) 0px;
     }
 
     .workspace.welcome-mode {
@@ -335,16 +340,8 @@
       display: none;
     }
 
-    .workspace:has(.drawer.closed) {
-      grid-template-columns: 272px minmax(640px, 1fr);
-    }
-
-    .workspace.welcome-mode:has(.drawer.closed) {
-      grid-template-columns: minmax(0, 1fr);
-    }
-
-    .workspace:has(.drawer.closed) .chat-pane {
-      border-right-color: transparent;
+    .workspace.welcome-mode .side-panel {
+      display: none;
     }
 
     .sidebar {
@@ -2306,31 +2303,123 @@
       border-color: color-mix(in oklch, var(--border) 70%, var(--accent));
     }
 
-    .drawer {
-      position: absolute;
-      top: 54px;
-      right: 16px;
-      width: min(318px, calc(100% - 304px));
-      max-height: calc(100% - 72px);
-      min-width: 292px;
+    /* Right side panel: a normal grid column (not floating). Hidden by default. */
+    .side-panel {
+      position: relative;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
+      width: var(--panel-width, 460px);
       display: flex;
       flex-direction: column;
-      padding: 0;
-      background: transparent;
-      border-radius: 18px;
-      box-shadow: var(--shadow);
+      border-left: 1px solid var(--border);
+      background: var(--surface);
       overflow: hidden;
-      z-index: 8;
     }
 
-    .drawer.closed {
+    .workspace.panel-hidden .side-panel {
       display: none;
     }
 
-    .drawer[data-mode="file"] {
-      width: min(680px, calc(100% - 376px));
-      min-width: min(560px, calc(100% - 48px));
+    /* Left-edge drag handle to resize the panel. */
+    .panel-resizer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 5px;
+      height: 100%;
+      cursor: col-resize;
+      z-index: 5;
     }
+    .panel-resizer:hover,
+    .panel-resizer.dragging {
+      background: color-mix(in oklch, var(--accent) 35%, transparent);
+    }
+
+    .panel-tabs {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      min-height: 38px;
+      padding: 6px 6px 0 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-2);
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }
+    .panel-tabs::-webkit-scrollbar { height: 4px; }
+
+    .panel-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      max-width: 180px;
+      padding: 6px 8px 6px 12px;
+      border: 1px solid transparent;
+      border-bottom: 0;
+      border-radius: 8px 8px 0 0;
+      background: transparent;
+      color: var(--muted);
+      font: 600 12px/1 var(--font-mono);
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .panel-tab .panel-tab-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .panel-tab.active {
+      background: var(--surface);
+      border-color: var(--border);
+      color: var(--fg);
+    }
+    .panel-tab .panel-tab-close {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1;
+      padding: 0 2px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .panel-tab .panel-tab-close:hover { color: var(--danger); background: var(--surface-3); }
+    .panel-tab.dirty .panel-tab-label::before { content: "• "; color: var(--warn); }
+
+    .panel-toolbar {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      padding-right: 4px;
+    }
+    .panel-toolbar button {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1;
+      padding: 4px 6px;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+    .panel-toolbar button:hover { background: var(--surface-3); color: var(--fg); }
+
+    .panel-content {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .panel-tab-pane {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .panel-tab-pane.hidden { display: none; }
 
     .drawer-header {
       min-width: 0;
@@ -2339,9 +2428,7 @@
       justify-content: space-between;
       gap: 10px;
       padding: 12px 14px;
-      border: 1px solid var(--border);
-      border-bottom: 0;
-      border-radius: 16px 16px 0 0;
+      border-bottom: 1px solid var(--border);
       background: var(--surface);
     }
 
@@ -2513,6 +2600,9 @@
       min-height: 0;
       overflow: hidden;
       background: var(--surface-2);
+      --file-code-padding: 12px;
+      --file-code-font-size: 12px;
+      --file-code-line-height: 18px;
     }
 
     .file-code-preview,
@@ -2529,15 +2619,19 @@
     }
 
     .file-code-preview {
-      font: 12px/1.55 var(--font-mono);
+      font: var(--file-code-font-size)/var(--file-code-line-height) var(--font-mono);
       tab-size: 2;
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
+      white-space: pre;
+      overflow-wrap: normal;
+      word-break: normal;
+      font-variant-ligatures: none;
+      font-feature-settings: "liga" 0, "calt" 0;
+      text-rendering: auto;
     }
 
     .file-code-preview code {
       display: block;
-      min-width: 0;
+      min-width: max-content;
       white-space: inherit;
     }
 
@@ -2657,15 +2751,21 @@
       height: 100%;
       min-height: 260px;
       margin: 0;
-      padding: 12px;
+      padding: var(--file-code-padding);
       border: 0;
-      font: 12px/1.55 var(--font-mono);
+      font: var(--file-code-font-size)/var(--file-code-line-height) var(--font-mono);
       tab-size: 2;
       white-space: pre;
+      overflow-wrap: normal;
+      word-break: normal;
+      letter-spacing: 0;
+      font-variant-ligatures: none;
+      font-feature-settings: "liga" 0, "calt" 0;
+      text-rendering: auto;
     }
 
     .file-editor-highlight {
-      overflow: auto;
+      overflow: hidden;
       pointer-events: none;
       background: var(--surface-2);
       color: var(--fg);
@@ -2677,16 +2777,121 @@
       white-space: pre;
     }
 
-    .tok-comment { color: color-mix(in oklch, var(--muted) 82%, var(--surface)); }
-    .tok-keyword { color: color-mix(in oklch, var(--accent) 84%, var(--fg)); font-weight: 650; }
-    .tok-string { color: color-mix(in oklch, var(--success) 76%, var(--fg)); }
-    .tok-number { color: color-mix(in oklch, var(--warn) 82%, var(--fg)); }
-    .tok-bool { color: color-mix(in oklch, var(--danger) 78%, var(--fg)); }
-    .tok-tag { color: color-mix(in oklch, var(--accent) 78%, var(--fg)); }
-    .tok-attr { color: color-mix(in oklch, var(--accent-2) 78%, var(--fg)); }
-    .tok-punctuation { color: var(--muted); }
-    .tok-heading { color: var(--fg); font-weight: 700; }
-    .tok-meta { color: color-mix(in oklch, var(--accent-2) 74%, var(--fg)); }
+    .file-code-preview [class^="tok-"],
+    .file-code-preview [class*=" tok-"],
+    .file-code-preview [class^="hljs-"],
+    .file-code-preview [class*=" hljs-"],
+    .file-editor-highlight [class^="tok-"],
+    .file-editor-highlight [class*=" tok-"],
+    .file-editor-highlight [class^="hljs-"],
+    .file-editor-highlight [class*=" hljs-"],
+    .message-body pre code [class^="hljs-"],
+    .message-body pre code [class*=" hljs-"],
+    .file-markdown-preview pre code [class^="hljs-"],
+    .file-markdown-preview pre code [class*=" hljs-"] {
+      font-weight: inherit;
+      font-style: inherit;
+      text-decoration: none;
+    }
+
+    body,
+    body[data-code-highlight-theme="vivid"] {
+      --code-fg: var(--fg);
+      --code-comment: oklch(47% 0.045 245);
+      --code-keyword: oklch(46% 0.24 292);
+      --code-string: oklch(43% 0.18 150);
+      --code-number: oklch(52% 0.19 64);
+      --code-literal: oklch(49% 0.22 18);
+      --code-title: oklch(42% 0.16 238);
+      --code-attr: oklch(44% 0.17 194);
+      --code-punctuation: oklch(43% 0.03 245);
+      --code-meta: oklch(48% 0.20 318);
+    }
+
+    body[data-code-highlight-theme="github"] {
+      --code-fg: oklch(28% 0.018 250);
+      --code-comment: oklch(52% 0.032 248);
+      --code-keyword: oklch(42% 0.16 318);
+      --code-string: oklch(42% 0.16 26);
+      --code-number: oklch(43% 0.15 261);
+      --code-literal: oklch(43% 0.15 261);
+      --code-title: oklch(39% 0.14 150);
+      --code-attr: oklch(39% 0.14 150);
+      --code-punctuation: oklch(35% 0.02 250);
+      --code-meta: oklch(47% 0.17 64);
+    }
+
+    body[data-code-highlight-theme="monokai"] {
+      --code-fg: oklch(30% 0.02 95);
+      --code-comment: oklch(53% 0.035 92);
+      --code-keyword: oklch(56% 0.24 352);
+      --code-string: oklch(58% 0.16 124);
+      --code-number: oklch(57% 0.17 280);
+      --code-literal: oklch(60% 0.18 30);
+      --code-title: oklch(55% 0.18 75);
+      --code-attr: oklch(51% 0.14 205);
+      --code-punctuation: oklch(42% 0.03 95);
+      --code-meta: oklch(52% 0.19 50);
+    }
+
+    body[data-code-highlight-theme="nord"] {
+      --code-fg: oklch(32% 0.025 245);
+      --code-comment: oklch(55% 0.035 245);
+      --code-keyword: oklch(49% 0.12 286);
+      --code-string: oklch(47% 0.10 165);
+      --code-number: oklch(52% 0.13 45);
+      --code-literal: oklch(50% 0.12 25);
+      --code-title: oklch(47% 0.12 225);
+      --code-attr: oklch(45% 0.10 195);
+      --code-punctuation: oklch(42% 0.025 245);
+      --code-meta: oklch(46% 0.12 292);
+    }
+
+    .file-code-preview .hljs,
+    .file-editor-highlight .hljs,
+    .file-markdown-preview pre code.hljs,
+    .message-body pre code.hljs {
+      background: transparent;
+      color: var(--code-fg);
+    }
+
+    .tok-comment,
+    .hljs-comment,
+    .hljs-quote { color: var(--code-comment); }
+    .tok-keyword,
+    .hljs-keyword,
+    .hljs-selector-tag,
+    .hljs-subst { color: var(--code-keyword); }
+    .tok-string,
+    .hljs-string,
+    .hljs-regexp,
+    .hljs-symbol,
+    .hljs-bullet { color: var(--code-string); }
+    .tok-number,
+    .hljs-number { color: var(--code-number); }
+    .tok-bool,
+    .hljs-literal { color: var(--code-literal); }
+    .tok-tag,
+    .hljs-name,
+    .hljs-title,
+    .hljs-section { color: var(--code-title); }
+    .tok-attr,
+    .hljs-attr,
+    .hljs-attribute,
+    .hljs-variable,
+    .hljs-template-variable { color: var(--code-attr); }
+    .tok-punctuation,
+    .hljs-punctuation,
+    .hljs-operator { color: var(--code-punctuation); }
+    .tok-heading,
+    .hljs-built_in,
+    .hljs-type,
+    .hljs-class .hljs-title { color: var(--code-title); }
+    .tok-meta,
+    .hljs-meta,
+    .hljs-doctag,
+    .hljs-selector-id,
+    .hljs-selector-class { color: var(--code-meta); }
 
     .file-editor {
       z-index: 1;
@@ -2815,18 +3020,6 @@
       .settings-actions {
         justify-content: flex-start;
       }
-
-      .drawer {
-        top: 58px;
-        right: 16px;
-        bottom: 16px;
-        width: min(330px, calc(100vw - 32px));
-        padding: 0;
-        border: 0;
-        border-radius: 16px;
-        box-shadow: var(--shadow);
-        z-index: 10;
-      }
     }
 
     @media (max-width: 860px) {
@@ -2842,6 +3035,7 @@
     }
   </style>
   <script src="./vendor/markdown-it.min.js"></script>
+  <script src="./vendor/highlight.min.js"></script>
 </head>
 <body>
   <div class="app-stage">
@@ -2892,7 +3086,7 @@
         </div>
       </header>
 
-      <div class="workspace welcome-mode">
+      <div class="workspace welcome-mode panel-hidden">
         <aside class="sidebar" aria-label="会话导航">
           <div class="brand-block">
             <div class="brand-row">
@@ -3082,6 +3276,7 @@
                 </div>
               </section>
             </section>
+
           </section>
         </main>
 
@@ -3191,6 +3386,10 @@
               <button class="settings-tab-btn" type="button" data-settings-tab="observability">
                 <span class="nav-icon" aria-hidden="true">◌</span>
                 <span>观测</span>
+              </button>
+              <button class="settings-tab-btn" type="button" data-settings-tab="interface">
+                <span class="nav-icon" aria-hidden="true">UI</span>
+                <span>界面</span>
               </button>
             </div>
           </aside>
@@ -3510,6 +3709,34 @@
                 </div>
               </section>
             </section>
+
+            <section class="settings-page" id="interfaceSettingsPage" hidden>
+              <header class="settings-title">
+                <h1>界面</h1>
+                <p>调整文件预览、编辑器和消息代码块的显示偏好。</p>
+              </header>
+
+              <section class="settings-section">
+                <h2 class="section-heading">代码高亮</h2>
+                <div class="settings-panel">
+                  <div class="settings-row">
+                    <div class="settings-row-label">
+                      <strong>高亮方案</strong>
+                      <span>使用 highlight.js 解析代码；切换后会立即应用到预览、编辑和消息代码块。</span>
+                    </div>
+                    <div class="settings-control">
+                      <select class="settings-select" id="codeHighlightThemeSelect"></select>
+                    </div>
+                  </div>
+                  <div class="settings-row">
+                    <div class="settings-row-label">
+                      <strong>状态</strong>
+                      <span id="codeHighlightThemeStatus">当前使用默认高亮方案。</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </section>
           </section>
         </main>
 
@@ -3617,45 +3844,55 @@
           </section>
         </div>
 
-        <aside class="drawer closed" id="detailDrawer" aria-label="工具调用详情抽屉">
-          <header class="drawer-header">
-            <div class="drawer-title">
-              <strong id="drawerToolName">输出</strong>
-              <span id="drawerSubtitle">等待工具调用</span>
+        <aside class="side-panel" id="sidePanel" aria-label="详情面板">
+          <div class="panel-resizer" id="panelResizer" aria-hidden="true"></div>
+          <div class="panel-tabs" id="panelTabs" role="tablist">
+            <div class="panel-toolbar">
+              <button type="button" id="closePanelBtn" aria-label="关闭面板" title="关闭面板">×</button>
             </div>
-            <button class="icon-btn" type="button" id="closeDrawer" aria-label="关闭详情">×</button>
-          </header>
-
-          <div class="drawer-body">
-            <div class="detail-stack" id="toolDetailView">
-              <section class="detail-card">
-                <h2>调用信息</h2>
-                <dl class="kv-list" id="drawerMeta"></dl>
-              </section>
-
-              <section class="detail-card">
-                <h2>参数</h2>
-                <pre id="drawerArgs"></pre>
-              </section>
-
-              <section class="detail-card">
-                <h2>结果</h2>
-                <pre id="drawerResult"></pre>
-                <div class="drawer-footer-actions">
-                  <button class="ghost-btn" type="button" id="copyResult">复制结果</button>
-                  <button class="ghost-btn" type="button" id="rerunTool">重新运行</button>
+          </div>
+          <div class="panel-content" id="panelContent">
+            <!-- Tool detail pane (reused across all tool tabs) -->
+            <div class="panel-tab-pane" id="toolDetailView">
+              <header class="drawer-header">
+                <div class="drawer-title">
+                  <strong id="drawerToolName">输出</strong>
+                  <span id="drawerSubtitle">等待工具调用</span>
                 </div>
-              </section>
+              </header>
+              <div class="drawer-body">
+                <div class="detail-stack">
+                  <section class="detail-card">
+                    <h2>调用信息</h2>
+                    <dl class="kv-list" id="drawerMeta"></dl>
+                  </section>
 
-              <section class="detail-card" id="drawerNoticeCard">
-                <div class="notice">
-                  <span aria-hidden="true">!</span>
-                  <span id="drawerNotice">运行 Agent 后，这里会显示工具调用的参数和结果。</span>
+                  <section class="detail-card">
+                    <h2>参数</h2>
+                    <pre id="drawerArgs"></pre>
+                  </section>
+
+                  <section class="detail-card">
+                    <h2>结果</h2>
+                    <pre id="drawerResult"></pre>
+                    <div class="drawer-footer-actions">
+                      <button class="ghost-btn" type="button" id="copyResult">复制结果</button>
+                      <button class="ghost-btn" type="button" id="rerunTool">重新运行</button>
+                    </div>
+                  </section>
+
+                  <section class="detail-card" id="drawerNoticeCard">
+                    <div class="notice">
+                      <span aria-hidden="true">!</span>
+                      <span id="drawerNotice">运行 Agent 后，这里会显示工具调用的参数和结果。</span>
+                    </div>
+                  </section>
                 </div>
-              </section>
+              </div>
             </div>
 
-            <div class="file-detail-view hidden" id="fileDetailView">
+            <!-- File detail pane (reused across all file tabs) -->
+            <div class="panel-tab-pane file-detail-view hidden" id="fileDetailView">
               <div class="file-editor-meta">
                 <div class="file-editor-path" id="fileEditorPath">未选择文件</div>
                 <div class="file-editor-stats" id="fileEditorStats">
@@ -3687,6 +3924,7 @@
       </div>
       <div class="context-menu" id="fileContextMenu" role="menu" hidden>
         <button type="button" role="menuitem" id="fileMenuRefresh">刷新</button>
+        <button type="button" role="menuitem" id="fileMenuReveal">在文件管理器中打开</button>
         <button type="button" role="menuitem" id="fileMenuNewFile">新建文件</button>
         <button type="button" role="menuitem" id="fileMenuNewFolder">新建文件夹</button>
         <button type="button" role="menuitem" id="fileMenuRename">重命名</button>
@@ -3737,6 +3975,8 @@
       selectedFileType: "",
       selectedFileEncoding: "utf-8",
       fileViewMode: "preview",
+      fileScrollTop: 0,
+      fileScrollLeft: 0,
       fileDirty: false,
       fileContextPath: "",
       fileContextType: "",
@@ -3756,8 +3996,11 @@
       windowResize: null
     };
 
-    const drawer = document.getElementById("detailDrawer");
-    const closeDrawer = document.getElementById("closeDrawer");
+    const sidePanel = document.getElementById("sidePanel");
+    const panelTabs = document.getElementById("panelTabs");
+    const panelContent = document.getElementById("panelContent");
+    const panelResizer = document.getElementById("panelResizer");
+    const closePanelBtn = document.getElementById("closePanelBtn");
     const drawerToolName = document.getElementById("drawerToolName");
     const drawerSubtitle = document.getElementById("drawerSubtitle");
     const drawerMeta = document.getElementById("drawerMeta");
@@ -3833,6 +4076,7 @@
     const deleteHistoryItem = document.getElementById("deleteHistoryItem");
     const fileContextMenu = document.getElementById("fileContextMenu");
     const fileMenuRefresh = document.getElementById("fileMenuRefresh");
+    const fileMenuReveal = document.getElementById("fileMenuReveal");
     const fileMenuNewFile = document.getElementById("fileMenuNewFile");
     const fileMenuNewFolder = document.getElementById("fileMenuNewFolder");
     const fileMenuRename = document.getElementById("fileMenuRename");
@@ -3860,6 +4104,7 @@
     const modelsSettingsPage = document.getElementById("modelsSettingsPage");
     const usageSettingsPage = document.getElementById("usageSettingsPage");
     const observabilitySettingsPage = document.getElementById("observabilitySettingsPage");
+    const interfaceSettingsPage = document.getElementById("interfaceSettingsPage");
     const providerPresetSelect = document.getElementById("providerPresetSelect");
     const providerNameInput = document.getElementById("providerNameInput");
     const providerBaseUrlInput = document.getElementById("providerBaseUrlInput");
@@ -3912,9 +4157,18 @@
     const observabilityProjectInput = document.getElementById("observabilityProjectInput");
     const observabilityStatusText = document.getElementById("observabilityStatusText");
     const saveObservabilityBtn = document.getElementById("saveObservabilityBtn");
+    const codeHighlightThemeSelect = document.getElementById("codeHighlightThemeSelect");
+    const codeHighlightThemeStatus = document.getElementById("codeHighlightThemeStatus");
     const SETTINGS_CACHE_KEY = "ra3copilot.settingsSnapshot.v1";
     const USAGE_DISPLAY_KEY = "ra3copilot.showUsageDetails.v1";
     const AGENT_MODE_KEY = "ra3copilot.agentMode.v1";
+    const CODE_HIGHLIGHT_THEME_KEY = "ra3copilot.codeHighlightTheme.v1";
+    const CODE_HIGHLIGHT_THEMES = [
+      { id: "vivid", label: "鲜明", description: "高饱和浅色主题，适合快速扫代码。" },
+      { id: "github", label: "GitHub", description: "接近 GitHub Light 的克制配色。" },
+      { id: "monokai", label: "Monokai", description: "更活泼的经典编辑器配色。" },
+      { id: "nord", label: "Nord", description: "低对比、冷色系的舒适配色。" }
+    ];
     const AGENT_META = {
       ra3: {
         label: "RA3 智能体",
@@ -4229,6 +4483,52 @@
       renderUsageDisplayPreference();
     }
 
+    function normalizeCodeHighlightTheme(theme) {
+      const value = String(theme || "").trim().toLowerCase();
+      return CODE_HIGHLIGHT_THEMES.some((item) => item.id === value) ? value : CODE_HIGHLIGHT_THEMES[0].id;
+    }
+
+    function readCodeHighlightThemePreference() {
+      try {
+        return normalizeCodeHighlightTheme(window.localStorage.getItem(CODE_HIGHLIGHT_THEME_KEY));
+      } catch {
+        return CODE_HIGHLIGHT_THEMES[0].id;
+      }
+    }
+
+    function writeCodeHighlightThemePreference(theme) {
+      try {
+        window.localStorage.setItem(CODE_HIGHLIGHT_THEME_KEY, normalizeCodeHighlightTheme(theme));
+      } catch {
+        // Ignore UI preference persistence failures.
+      }
+    }
+
+    function applyCodeHighlightTheme(theme = readCodeHighlightThemePreference()) {
+      const normalized = normalizeCodeHighlightTheme(theme);
+      document.body.dataset.codeHighlightTheme = normalized;
+      if (codeHighlightThemeSelect) codeHighlightThemeSelect.value = normalized;
+      const current = CODE_HIGHLIGHT_THEMES.find((item) => item.id === normalized) || CODE_HIGHLIGHT_THEMES[0];
+      if (codeHighlightThemeStatus) {
+        codeHighlightThemeStatus.textContent = `当前方案：${current.label}。${current.description}`;
+      }
+      return normalized;
+    }
+
+    function renderInterfaceSettings() {
+      if (!codeHighlightThemeSelect) return;
+      codeHighlightThemeSelect.innerHTML = CODE_HIGHLIGHT_THEMES.map((theme) => (
+        `<option value="${escapeHtml(theme.id)}">${escapeHtml(theme.label)}</option>`
+      )).join("");
+      applyCodeHighlightTheme();
+    }
+
+    function setCodeHighlightTheme(theme) {
+      const normalized = applyCodeHighlightTheme(theme);
+      writeCodeHighlightThemePreference(normalized);
+      updateCodePreview();
+    }
+
     function escapeHtml(value) {
       return String(value ?? "").replace(/[<>&"]/g, (char) => {
         if (char === "<") return "&lt;";
@@ -4335,7 +4635,9 @@
         html: false,
         linkify: true,
         typographer: false,
-        breaks: false
+        breaks: false,
+        langPrefix: "hljs language-",
+        highlight: (code, language) => highlightCode(code, language || "text")
       });
       const defaultLinkOpen = md.renderer.rules.link_open || ((tokens, idx, options, env, self) => (
         self.renderToken(tokens, idx, options)
@@ -4399,13 +4701,14 @@
         const fence = line.match(/^```\s*([\w-]*)\s*$/);
         if (fence) {
           const codeLines = [];
+          const language = normalizeCodeLanguage(fence[1] || "text");
           index += 1;
           while (index < lines.length && !/^```\s*$/.test(lines[index])) {
             codeLines.push(lines[index]);
             index += 1;
           }
           if (index < lines.length) index += 1;
-          blocks.push(`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
+          blocks.push(`<pre><code class="${escapeAttribute(codeClassForLanguage(language))}">${highlightCode(codeLines.join("\n"), language)}</code></pre>`);
           continue;
         }
 
@@ -4826,6 +5129,10 @@
     function codeLanguageForPath(path) {
       const ext = fileBaseName(path).toLowerCase().split(".").pop() || "";
       const map = {
+        c: "c",
+        cc: "cpp",
+        cpp: "cpp",
+        cs: "csharp",
         lua: "lua",
         json: "json",
         xml: "xml",
@@ -4838,9 +5145,10 @@
         markdown: "markdown",
         js: "javascript",
         jsx: "javascript",
-        ts: "javascript",
-        tsx: "javascript",
+        ts: "typescript",
+        tsx: "typescript",
         py: "python",
+        ps1: "powershell",
         css: "css",
         html: "xml",
         htm: "xml",
@@ -4858,7 +5166,12 @@
         yaml: "YAML",
         markdown: "Markdown",
         javascript: "JavaScript",
+        typescript: "TypeScript",
+        c: "C",
+        cpp: "C++",
+        csharp: "C#",
         python: "Python",
+        powershell: "PowerShell",
         css: "CSS",
         text: "Text"
       };
@@ -4882,10 +5195,17 @@
         markdown: "markdown",
         js: "javascript",
         jsx: "javascript",
-        ts: "javascript",
-        tsx: "javascript",
+        ts: "typescript",
+        tsx: "typescript",
         py: "python",
         python: "python",
+        ps1: "powershell",
+        powershell: "powershell",
+        c: "c",
+        cc: "cpp",
+        cpp: "cpp",
+        cs: "csharp",
+        csharp: "csharp",
         css: "css",
         text: "text"
       };
@@ -4905,88 +5225,28 @@
       return `<span class="${className}">${value}</span>`;
     }
 
-    function highlightLua(code) {
-      const escaped = escapeCode(code);
-      const keywords = "(?:and|break|do|else|elseif|end|false|for|function|goto|if|in|local|nil|not|or|repeat|return|then|true|until|while)";
-      const pattern = new RegExp(`(--\\[\\[[\\s\\S]*?\\]\\]|--[^\\n]*|"(?:\\\\.|[^"\\\\])*"|'(?:\\\\.|[^'\\\\])*'|\\b0x[0-9a-fA-F]+\\b|\\b\\d+(?:\\.\\d+)?\\b|\\b${keywords}\\b)`, "g");
-      return escaped.replace(pattern, (token) => {
-        if (token.startsWith("--")) return tokenSpan("tok-comment", token);
-        if (token.startsWith("\"") || token.startsWith("'")) return tokenSpan("tok-string", token);
-        if (/^(?:true|false|nil)$/.test(token)) return tokenSpan("tok-bool", token);
-        if (/^(?:0x[0-9a-fA-F]+|\d)/.test(token)) return tokenSpan("tok-number", token);
-        return tokenSpan("tok-keyword", token);
-      });
+    function highlightLanguageName(language) {
+      const normalized = normalizeCodeLanguage(language);
+      return normalized === "text" ? "plaintext" : normalized;
     }
 
-    function highlightJson(code) {
-      const escaped = escapeCode(code);
-      return escaped.replace(/("(?:\\.|[^"\\])*"|\btrue\b|\bfalse\b|\bnull\b|-?\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b)/g, (token) => {
-        if (token.startsWith("\"")) return tokenSpan("tok-string", token);
-        if (/^(?:true|false|null)$/.test(token)) return tokenSpan("tok-bool", token);
-        return tokenSpan("tok-number", token);
-      });
-    }
-
-    function highlightMarkup(code) {
-      const escaped = escapeCode(code);
-      return escaped
-        .replace(/(&lt;!--[\s\S]*?--&gt;)/g, (token) => tokenSpan("tok-comment", token))
-        .replace(/(&lt;\/?)([A-Za-z_][\w:.-]*)([\s\S]*?)(\/?&gt;)/g, (_, open, name, rest, close) => {
-          const attrs = rest.replace(/([A-Za-z_:][\w:.-]*)(=)("[^"]*"|'[^']*')/g, (_attr, attrName, equals, attrValue) => {
-            return `${tokenSpan("tok-attr", attrName)}${tokenSpan("tok-punctuation", equals)}${tokenSpan("tok-string", attrValue)}`;
-          });
-          return `${tokenSpan("tok-punctuation", open)}${tokenSpan("tok-tag", name)}${attrs}${tokenSpan("tok-punctuation", close)}`;
-        });
-    }
-
-    function highlightIni(code) {
-      return escapeCode(code).split("\n").map((line) => {
-        if (/^\s*[;#]/.test(line)) return tokenSpan("tok-comment", line);
-        if (/^\s*\[[^\]]+\]/.test(line)) return tokenSpan("tok-meta", line);
-        return line.replace(/^(\s*[\w.-]+\s*)(=|:)(.*)$/g, (_match, key, equals, value) => {
-          return `${tokenSpan("tok-attr", key)}${tokenSpan("tok-punctuation", equals)}${tokenSpan("tok-string", value)}`;
-        });
-      }).join("\n");
-    }
-
-    function highlightYaml(code) {
-      return escapeCode(code).split("\n").map((line) => {
-        if (/^\s*#/.test(line)) return tokenSpan("tok-comment", line);
-        return line
-          .replace(/^(\s*[-]?\s*[\w.-]+\s*)(:)(.*)$/g, (_match, key, colon, value) => {
-            return `${tokenSpan("tok-attr", key)}${tokenSpan("tok-punctuation", colon)}${value}`;
-          })
-          .replace(/\b(true|false|null)\b/g, (token) => tokenSpan("tok-bool", token))
-          .replace(/\b\d+(?:\.\d+)?\b/g, (token) => tokenSpan("tok-number", token));
-      }).join("\n");
-    }
-
-    function highlightMarkdown(code) {
-      return escapeCode(code).split("\n").map((line) => {
-        if (/^\s*#{1,6}\s/.test(line)) return tokenSpan("tok-heading", line);
-        if (/^\s*```/.test(line)) return tokenSpan("tok-meta", line);
-        if (/^\s*&gt;/.test(line)) return tokenSpan("tok-comment", line);
-        return line.replace(/`([^`]+)`/g, (_match, token) => tokenSpan("tok-string", `\`${token}\``));
-      }).join("\n");
-    }
-
-    function highlightGenericCode(code) {
-      return escapeCode(code).split("\n").map((line) => {
-        if (/^\s*(\/\/|#|;)/.test(line)) return tokenSpan("tok-comment", line);
-        return line
-          .replace(/("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/g, (token) => tokenSpan("tok-string", token))
-          .replace(/\b\d+(?:\.\d+)?\b/g, (token) => tokenSpan("tok-number", token));
-      }).join("\n");
+    function codeClassForLanguage(language) {
+      return `hljs language-${highlightLanguageName(language)}`;
     }
 
     function highlightCode(code, language) {
-      if (language === "lua") return highlightLua(code);
-      if (language === "json") return highlightJson(code);
-      if (language === "xml") return highlightMarkup(code);
-      if (language === "ini") return highlightIni(code);
-      if (language === "yaml") return highlightYaml(code);
-      if (language === "markdown") return highlightMarkdown(code);
-      return highlightGenericCode(code);
+      const value = String(code ?? "");
+      const highlighter = window.hljs;
+      const highlightLanguage = highlightLanguageName(language);
+      if (!highlighter || typeof highlighter.highlight !== "function") return escapeCode(value);
+      try {
+        if (highlightLanguage !== "plaintext" && highlighter.getLanguage(highlightLanguage)) {
+          return highlighter.highlight(value, { language: highlightLanguage, ignoreIllegals: true }).value;
+        }
+      } catch {
+        // Fall through to escaped plaintext when a grammar rejects the input.
+      }
+      return escapeCode(value);
     }
 
     function renderMarkdownInline(text) {
@@ -5053,7 +5313,7 @@
             index += 1;
           }
           if (index < lines.length) index += 1;
-          html.push(`<pre><code>${highlightCode(codeLines.join("\n"), language)}</code></pre>`);
+          html.push(`<pre><code class="${escapeAttribute(codeClassForLanguage(language))}">${highlightCode(codeLines.join("\n"), language)}</code></pre>`);
           continue;
         }
 
@@ -5130,7 +5390,9 @@
     function toggleProjectFolder(path) {
       state.selectedFilePath = path || "";
       state.selectedFileType = "folder";
-      if (!path) return;
+      // The project root node uses "" as its path; allow it to toggle. Only
+      // bail when no path argument was passed at all.
+      if (path === undefined || path === null) return;
       if (state.expandedFileFolders.has(path)) {
         state.expandedFileFolders.delete(path);
       } else {
@@ -5268,6 +5530,164 @@
       if (filesActive) loadProjectFiles().catch((error) => showToast(error.message || "读取文件树失败"));
     }
 
+    // --- Side panel: tab registry (extensible) ----------------------------
+    // The panel hosts multiple tabs. Each tab kind maps to a shared "pane" DOM
+    // node (tool -> #toolDetailView, file -> #fileDetailView) and a renderer
+    // that fills it. Tabs are keyed so the same file/tool reuses one tab.
+    //
+    // To add a new content type later (diff, history, logs...): register a
+    // pane element + a render function here, then call openTab(kind, ...).
+    const panelTabList = []; // { key, kind, title, el, dirty }
+    const panelPanes = {
+      tool: toolDetailView,
+      file: fileDetailView,
+    };
+    let panelActiveKey = null;
+
+    function paneForKind(kind) {
+      return panelPanes[kind] || null;
+    }
+
+    function showPanel() {
+      document.querySelector(".workspace").classList.remove("panel-hidden");
+    }
+    function hidePanel() {
+      document.querySelector(".workspace").classList.add("panel-hidden");
+    }
+    function panelVisible() {
+      return !document.querySelector(".workspace").classList.contains("panel-hidden");
+    }
+
+    function renderPanelTabs() {
+      // Keep the toolbar (close button) as the last child; tabs go before it.
+      const toolbar = panelTabs.querySelector(".panel-toolbar");
+      panelTabs.querySelectorAll(".panel-tab").forEach((el) => el.remove());
+      panelTabList.forEach((tab) => {
+        const el = document.createElement("div");
+        el.className = "panel-tab" + (tab.key === panelActiveKey ? " active" : "") + (tab.dirty ? " dirty" : "");
+        el.setAttribute("role", "tab");
+        el.setAttribute("data-tab-key", tab.key);
+        el.innerHTML = `<span class="panel-tab-label" title="${escapeHtml(tab.title)}">${escapeHtml(tab.title)}</span><button class="panel-tab-close" type="button" aria-label="关闭标签">×</button>`;
+        el.addEventListener("click", (event) => {
+          if (event.target.classList.contains("panel-tab-close")) {
+            event.stopPropagation();
+            closePanelTab(tab.key);
+            return;
+          }
+          activatePanelTab(tab.key);
+        });
+        panelTabs.insertBefore(el, toolbar);
+      });
+    }
+
+    function activatePanelTab(key) {
+      const tab = panelTabList.find((t) => t.key === key);
+      if (!tab) return;
+      panelActiveKey = key;
+      // Show the pane for this tab's kind, hide others.
+      Object.entries(panelPanes).forEach(([kind, pane]) => {
+        if (kind === tab.kind) pane.classList.remove("hidden");
+        else pane.classList.add("hidden");
+      });
+      // Re-render the active tab's content into its pane (panes are shared).
+      if (typeof tab.render === "function") tab.render();
+      renderPanelTabs();
+      showPanel();
+    }
+
+    function openPanelTab(kind, key, title, render) {
+      let tab = panelTabList.find((t) => t.key === key);
+      if (tab) {
+        tab.title = title;
+        tab.render = render;
+      } else {
+        tab = { key, kind, title, render, dirty: false };
+        panelTabList.push(tab);
+      }
+      activatePanelTab(tab.key);
+      return tab;
+    }
+
+    function closePanelTab(key) {
+      const idx = panelTabList.findIndex((t) => t.key === key);
+      if (idx < 0) return;
+      const wasActive = panelActiveKey === key;
+      panelTabList.splice(idx, 1);
+      if (wasActive) {
+        if (panelTabList.length) {
+          activatePanelTab(panelTabList[Math.max(0, idx - 1)].key);
+        } else {
+          panelActiveKey = null;
+          hidePanel();
+        }
+      }
+      renderPanelTabs();
+    }
+
+    function setPanelTabDirty(key, dirty) {
+      const tab = panelTabList.find((t) => t.key === key);
+      if (!tab) return;
+      tab.dirty = !!dirty;
+      renderPanelTabs();
+    }
+
+    function activePanelTabKey() {
+      return panelActiveKey;
+    }
+
+    function activePanelTabKind() {
+      const tab = panelTabList.find((t) => t.key === panelActiveKey);
+      return tab ? tab.kind : null;
+    }
+
+    function clearPanelTabs() {
+      panelTabList.length = 0;
+      panelActiveKey = null;
+      renderPanelTabs();
+      hidePanel();
+    }
+
+    // --- Side panel: resize (drag the left edge, persist width) -----------
+    const PANEL_WIDTH_KEY = "ra3.panel.width";
+    const PANEL_MIN_WIDTH = 300;
+    const PANEL_MAX_RATIO = 0.6;
+
+    function applyPanelWidth(width) {
+      const clamped = Math.max(PANEL_MIN_WIDTH, Math.min(width, window.innerWidth * PANEL_MAX_RATIO));
+      sidePanel.style.setProperty("--panel-width", `${Math.round(clamped)}px`);
+    }
+
+    function initPanelWidth() {
+      const saved = Number(localStorage.getItem(PANEL_WIDTH_KEY));
+      applyPanelWidth(saved && saved > 0 ? saved : 460);
+    }
+
+    function initPanelResizer() {
+      let dragging = false;
+      let startX = 0;
+      let startWidth = 0;
+      panelResizer.addEventListener("mousedown", (event) => {
+        dragging = true;
+        startX = event.clientX;
+        startWidth = sidePanel.getBoundingClientRect().width;
+        panelResizer.classList.add("dragging");
+        document.body.style.cursor = "col-resize";
+        event.preventDefault();
+      });
+      document.addEventListener("mousemove", (event) => {
+        if (!dragging) return;
+        // Dragging left (smaller clientX) widens the panel (right column).
+        applyPanelWidth(startWidth + (startX - event.clientX));
+      });
+      document.addEventListener("mouseup", () => {
+        if (!dragging) return;
+        dragging = false;
+        panelResizer.classList.remove("dragging");
+        document.body.style.cursor = "";
+        localStorage.setItem(PANEL_WIDTH_KEY, String(sidePanel.getBoundingClientRect().width));
+      });
+    }
+
     function showToolDetailView() {
       toolDetailView.classList.remove("hidden");
       fileDetailView.classList.add("hidden");
@@ -5278,7 +5698,29 @@
       fileDetailView.classList.remove("hidden");
     }
 
-    function setFileViewMode(mode) {
+    function filePreviewScrollElement() {
+      return codeLanguageForPath(state.selectedFilePath) === "markdown" ? fileMarkdownPreview : fileCodePreview;
+    }
+
+    function activeFileScrollElement() {
+      return state.fileViewMode === "edit" ? fileEditor : filePreviewScrollElement();
+    }
+
+    function rememberFileScroll(element = activeFileScrollElement()) {
+      if (!element) return;
+      state.fileScrollTop = element.scrollTop || 0;
+      state.fileScrollLeft = element.scrollLeft || 0;
+    }
+
+    function restoreFileScroll(element = activeFileScrollElement()) {
+      if (!element) return;
+      element.scrollTop = state.fileScrollTop || 0;
+      element.scrollLeft = state.fileScrollLeft || 0;
+      if (element === fileEditor) syncEditorHighlightScroll();
+    }
+
+    function setFileViewMode(mode, options = {}) {
+      if (options.preserveScroll !== false) rememberFileScroll();
       const wantsEdit = mode === "edit" && !fileEditModeBtn.disabled;
       state.fileViewMode = wantsEdit ? "edit" : "preview";
       const previewActive = state.fileViewMode === "preview";
@@ -5291,6 +5733,7 @@
       fileEditModeBtn.classList.toggle("active", !previewActive);
       filePreviewModeBtn.setAttribute("aria-selected", String(previewActive));
       fileEditModeBtn.setAttribute("aria-selected", String(!previewActive));
+      restoreFileScroll();
       if (!previewActive) {
         syncEditorHighlightScroll();
         fileEditor.focus();
@@ -5302,8 +5745,15 @@
       const code = fileCodePreview.querySelector("code");
       const editorCode = fileEditorHighlight.querySelector("code");
       const value = fileEditor.value || "";
-      if (code) code.innerHTML = highlightCode(value, language);
-      if (editorCode) editorCode.innerHTML = highlightCode(value, language) || "\n";
+      const codeClass = codeClassForLanguage(language);
+      if (code) {
+        code.className = codeClass;
+        code.innerHTML = highlightCode(value, language);
+      }
+      if (editorCode) {
+        editorCode.className = codeClass;
+        editorCode.innerHTML = highlightCode(value, language) || "\n";
+      }
       fileMarkdownPreview.innerHTML = language === "markdown" ? renderMarkdownSafe(value) : "";
       fileCodePreview.setAttribute("data-language", codeLanguageLabel(language));
       fileEditorHighlight.setAttribute("data-language", codeLanguageLabel(language));
@@ -5313,8 +5763,14 @@
     function clearCodePreview(message = "选择文件后显示代码预览") {
       const code = fileCodePreview.querySelector("code");
       const editorCode = fileEditorHighlight.querySelector("code");
-      if (code) code.innerHTML = tokenSpan("tok-comment", escapeCode(message));
-      if (editorCode) editorCode.innerHTML = tokenSpan("tok-comment", escapeCode(message));
+      if (code) {
+        code.className = codeClassForLanguage("text");
+        code.innerHTML = tokenSpan("tok-comment", escapeCode(message));
+      }
+      if (editorCode) {
+        editorCode.className = codeClassForLanguage("text");
+        editorCode.innerHTML = tokenSpan("tok-comment", escapeCode(message));
+      }
       fileMarkdownPreview.innerHTML = `<p class="tok-comment">${escapeCode(message)}</p>`;
       fileCodePreview.setAttribute("data-language", "Text");
       fileEditorHighlight.setAttribute("data-language", "Text");
@@ -5330,21 +5786,19 @@
     function updateFileDirty(dirty) {
       state.fileDirty = dirty;
       saveFileBtn.disabled = !dirty || fileEditor.readOnly;
+      // Reflect dirty state on the active file tab (• marker) instead of the
+      // shared tool subtitle, which belongs to tool tabs now.
       if (state.selectedFilePath) {
-        drawerSubtitle.textContent = dirty ? "已修改，尚未保存" : "已保存";
+        setPanelTabDirty("file:" + state.selectedFilePath, dirty);
       }
     }
 
     function renderFileEditor(file) {
+      // Pure renderer: fills the shared file pane. Caller opens/activates the tab.
       state.selectedFilePath = file.path || "";
       state.selectedFileType = "file";
       state.selectedFileEncoding = file.encoding || "utf-8";
       renderProjectFileTree();
-      drawer.dataset.mode = "file";
-      drawer.classList.remove("closed");
-      showFileDetailView();
-      drawerToolName.textContent = file.name || "文件";
-      drawerSubtitle.textContent = file.editable ? "可编辑文本" : "只读预览";
       fileEditorPath.textContent = file.path || file.name || "未命名文件";
       const language = codeLanguageForPath(file.path || file.name || "");
       fileEditorStats.innerHTML = `
@@ -5356,8 +5810,10 @@
       fileEditor.value = file.content || "";
       fileEditor.readOnly = !file.editable;
       fileEditModeBtn.disabled = !file.editable;
+      state.fileScrollTop = 0;
+      state.fileScrollLeft = 0;
       updateCodePreview();
-      setFileViewMode("preview");
+      setFileViewMode("preview", { preserveScroll: false });
       updateFileDirty(false);
     }
 
@@ -5366,17 +5822,18 @@
       state.selectedFileType = type || "";
       renderProjectFileTree();
       if (type !== "file") {
-        drawer.dataset.mode = "file";
-        drawer.classList.remove("closed");
-        showFileDetailView();
-        drawerToolName.textContent = fileBaseName(path) || "文件夹";
-        drawerSubtitle.textContent = "选择文件进行预览或编辑";
-        fileEditorPath.textContent = path || "工程根目录";
-        fileEditorStats.innerHTML = `<span>文件夹</span><span>可新建文件或文件夹</span>`;
-        fileEditor.value = "";
-        fileEditor.readOnly = true;
-        clearCodePreview("选择文件后显示代码预览");
-        updateFileDirty(false);
+        // Folder: open a tab showing an empty file pane (no content to edit).
+        const folderName = fileBaseName(path) || "工程根目录";
+        openPanelTab("file", "file:" + (path || ""), folderName, () => {
+          fileEditorPath.textContent = path || "工程根目录";
+          fileEditorStats.innerHTML = `<span>文件夹</span><span>可新建文件或文件夹</span>`;
+          fileEditor.value = "";
+          fileEditor.readOnly = true;
+          state.fileScrollTop = 0;
+          state.fileScrollLeft = 0;
+          clearCodePreview("选择文件后显示代码预览");
+          updateFileDirty(false);
+        });
         return;
       }
       const api = getApi();
@@ -5389,7 +5846,8 @@
         showToast(result.error || "读取文件失败");
         return;
       }
-      renderFileEditor(result.file);
+      const file = result.file;
+      openPanelTab("file", "file:" + path, file.name || fileBaseName(path) || "文件", () => renderFileEditor(file));
     }
 
     async function refreshProjectFiles() {
@@ -5471,7 +5929,7 @@
         state.selectedFileType = "";
       }
       applyFileTree(result.tree);
-      if (drawer.dataset.mode === "file") drawer.classList.add("closed");
+      closePanelTab("file:" + path);
       showToast("已删除");
     }
 
@@ -5588,7 +6046,10 @@
       state.assistantBuffer = "";
       state.tools = new Map();
       Object.keys(toolDetails).forEach((key) => delete toolDetails[key]);
-      drawer.classList.add("closed");
+      // Tool tabs belong to the conversation; drop them but keep file tabs.
+      [...panelTabList].forEach((tab) => {
+        if (tab.kind === "tool") closePanelTab(tab.key);
+      });
     }
 
     function renderConversationMessages(conversation) {
@@ -5689,7 +6150,7 @@
       welcomePane.classList.remove("view-hidden");
       chatPane.classList.add("view-hidden");
       settingsPane.classList.add("view-hidden");
-      drawer.classList.add("closed");
+      hidePanel();
       openSettingsBtn.classList.remove("active");
       showAgentSelection();
       renderRecentProjects();
@@ -5773,6 +6234,37 @@
         return;
       }
       showToast("已打开项目文件夹");
+    }
+
+    async function revealInFileManager() {
+      // Resolve the absolute path of the right-clicked node and open it in the
+      // OS file manager. Folders open directly; files reveal their parent dir;
+      // the root node (empty path) opens the project root.
+      const project = currentProjectBody();
+      if (!project || !project.path) {
+        showToast("未选择工程");
+        return;
+      }
+      const relPath = (state.fileContextPath || "").trim();
+      const type = state.fileContextType || "folder";
+      // File -> reveal its containing directory.
+      const targetRel = type === "file" && relPath.includes("/")
+        ? relPath.slice(0, relPath.lastIndexOf("/"))
+        : relPath;
+      const absPath = [project.path.replace(/[\\/]+$/, ""), targetRel]
+        .filter((part) => part.length > 0)
+        .join("/");
+      const bridge = localBridge();
+      if (!bridge || typeof bridge.open_project_folder !== "function") {
+        showToast("窗口尚未就绪");
+        return;
+      }
+      const result = await bridge.open_project_folder(absPath);
+      if (!result || !result.ok) {
+        showToast((result && result.error) || "无法打开");
+        return;
+      }
+      showToast("已在文件管理器中打开");
     }
 
     async function openProjectTerminalFromMenu() {
@@ -6750,6 +7242,7 @@
       state.usageLoadedFromBridge = true;
       state.usage = result.usage || previewUsageSnapshot();
       renderUsage();
+      renderInterfaceSettings();
     }
 
     async function openSettings(tab = "providers") {
@@ -6758,7 +7251,7 @@
       welcomePane.classList.add("view-hidden");
       chatPane.classList.add("view-hidden");
       settingsPane.classList.remove("view-hidden");
-      drawer.classList.add("closed");
+      hidePanel();
       openSettingsBtn.classList.add("active");
       await loadSettings().catch((error) => showToast(error.message || String(error)));
       setSettingsTab(tab);
@@ -6783,9 +7276,11 @@
       modelsSettingsPage.hidden = tab !== "models";
       usageSettingsPage.hidden = tab !== "usage";
       observabilitySettingsPage.hidden = tab !== "observability";
+      interfaceSettingsPage.hidden = tab !== "interface";
       if (tab === "usage") {
         loadUsageSummary().catch((error) => showToast(error.message || String(error)));
       }
+      if (tab === "interface") renderInterfaceSettings();
     }
 
     function currentProviderPayload() {
@@ -6930,7 +7425,16 @@
       return "缺少 API Key";
     }
     function applyContext(context, updateStatus = true) {
+      const prevProjectId = state.context?.project?.id;
+      const nextProjectId = context?.project?.id;
       state.context = context;
+      // Switching projects invalidates open file tabs (their paths belong to
+      // the old project). Drop file tabs; tool tabs go with the conversation.
+      if (prevProjectId && nextProjectId && prevProjectId !== nextProjectId) {
+        [...panelTabList].forEach((tab) => {
+          if (tab.kind === "file") closePanelTab(tab.key);
+        });
+      }
       renderCompanionStatus(context.ra3Companion);
       if (state.conversationUsageId !== (context.threadId || "")) {
         state.conversationUsage = null;
@@ -7198,7 +7702,7 @@
         <span class="event-duration">${escapeHtml(elapsed)}</span>
       `;
       updateToolPanelHeader();
-      if (!drawer.classList.contains("closed") && drawer.dataset.tool === id) {
+      if (panelVisible() && activePanelTabKey() === "tool:" + id) {
         setActiveTool(id);
       }
       scrollMessages();
@@ -7212,16 +7716,15 @@
         item.classList.toggle("active", isActive);
         item.setAttribute("aria-pressed", String(isActive));
       });
-      drawer.dataset.tool = key;
-      drawer.dataset.mode = "tool";
-      drawer.classList.remove("closed");
-      showToolDetailView();
-      drawerToolName.textContent = "工具输出";
-      drawerSubtitle.textContent = `${detail.name} · ${detail.subtitle}`;
-      renderMeta(detail.meta);
-      drawerArgs.textContent = formatJson(detail.args);
-      drawerResult.textContent = detail.result;
-      drawerNotice.textContent = detail.notice;
+      const title = `${detail.name}` || "工具输出";
+      openPanelTab("tool", "tool:" + key, title, () => {
+        drawerToolName.textContent = "工具输出";
+        drawerSubtitle.textContent = `${detail.name} · ${detail.subtitle}`;
+        renderMeta(detail.meta);
+        drawerArgs.textContent = formatJson(detail.args);
+        drawerResult.textContent = detail.result;
+        drawerNotice.textContent = detail.notice;
+      });
     }
 
     function closePermissionPopover() {
@@ -7556,6 +8059,10 @@
       closeFileContextMenu();
       refreshProjectFiles().catch((error) => showToast(error.message || "刷新文件树失败"));
     });
+    fileMenuReveal.addEventListener("click", () => {
+      closeFileContextMenu();
+      revealInFileManager().catch((error) => showToast(error.message || "打开失败"));
+    });
     fileMenuNewFile.addEventListener("click", () => createProjectItemFromMenu("file"));
     fileMenuNewFolder.addEventListener("click", () => createProjectItemFromMenu("folder"));
     fileMenuRename.addEventListener("click", renameProjectItemFromMenu);
@@ -7597,7 +8104,7 @@
         event.preventDefault();
         openSettingsFromMenu();
       }
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s" && drawer.dataset.mode === "file") {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s" && activePanelTabKind() === "file") {
         event.preventDefault();
         saveActiveFile();
       }
@@ -7632,9 +8139,9 @@
         }
       });
     });
-    closeDrawer.addEventListener("click", () => {
-      drawer.classList.add("closed");
-    });
+    closePanelBtn.addEventListener("click", hidePanel);
+    initPanelWidth();
+    initPanelResizer();
 
     copyResult.addEventListener("click", async () => {
       try {
@@ -7755,7 +8262,12 @@
       updateFileDirty(true);
       updateCodePreview();
     });
-    fileEditor.addEventListener("scroll", syncEditorHighlightScroll);
+    fileEditor.addEventListener("scroll", () => {
+      rememberFileScroll(fileEditor);
+      syncEditorHighlightScroll();
+    });
+    fileCodePreview.addEventListener("scroll", () => rememberFileScroll(fileCodePreview));
+    fileMarkdownPreview.addEventListener("scroll", () => rememberFileScroll(fileMarkdownPreview));
     reloadFileBtn.addEventListener("click", () => {
       if (!state.selectedFilePath || state.selectedFileType !== "file") return;
       selectProjectItem(state.selectedFilePath, "file");
@@ -7932,6 +8444,10 @@
       setUsageDisplayPreference(usageDisplayToggle.checked);
     });
 
+    codeHighlightThemeSelect.addEventListener("change", () => {
+      setCodeHighlightTheme(codeHighlightThemeSelect.value);
+    });
+
     saveObservabilityBtn.addEventListener("click", async () => {
       const payload = currentObservabilityPayload();
       if (payload.enabled && !payload.langsmith_api_key) {
@@ -7987,6 +8503,7 @@
     setAgentMode(readAgentModePreference(), false);
     setPermissionPolicy("once");
     setUsageDisplayPreference(readUsageDisplayPreference(), false);
+    renderInterfaceSettings();
     applyProjectsSnapshot(previewProjectsSnapshot());
     const cachedSettings = readSettingsCache();
     if (cachedSettings) {
