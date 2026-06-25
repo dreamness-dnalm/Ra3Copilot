@@ -1,6 +1,7 @@
 from deepagents import create_deep_agent
 from deepagents.backends import FilesystemBackend
 
+from core.agents.project_skills import load_project_skills, resolve_project_root
 from core.checkpointer import get_checkpointer
 from core.middlewares.configurable_model import configurable_model
 from core.middlewares.project_context import project_context
@@ -21,16 +22,24 @@ _SYSTEM_PROMPT = """你是 Mia Copilot 的万能智能体。
 """
 
 
-async def create_universal_agent(project_path: str):
+def _load_system_prompt(project_path: str | None = None) -> str:
+    project_skills = load_project_skills(project_path)
+    if not project_skills:
+        return _SYSTEM_PROMPT
+    return f"{_SYSTEM_PROMPT}\n\n{project_skills}"
+
+
+async def create_universal_agent(project_path: str | None = None):
     """创建通用对话 agent。
 
     ``project_path`` 用作文件工具 backend 的根目录，使 write/read/edit/grep
     等工具直接操作该工程目录。
     """
     load_runtime_env()
-    backend = FilesystemBackend(root_dir=project_path, virtual_mode=True)
+    project_root = resolve_project_root(project_path)
+    backend = FilesystemBackend(root_dir=str(project_root), virtual_mode=True)
     return create_deep_agent(
-        system_prompt=_SYSTEM_PROMPT,
+        system_prompt=_load_system_prompt(str(project_root)),
         middleware=[configurable_model, project_context],
         tools=[],
         backend=backend,

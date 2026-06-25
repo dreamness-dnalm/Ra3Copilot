@@ -3,6 +3,7 @@ from pathlib import Path
 from deepagents import create_deep_agent
 from deepagents.backends import FilesystemBackend
 
+from core.agents.project_skills import load_project_skills, resolve_project_root
 from core.checkpointer import get_checkpointer
 from core.middlewares.configurable_model import configurable_model
 from core.middlewares.project_context import project_context
@@ -17,25 +18,29 @@ if _map_analyser_skill.is_file():
     _SKILL_PATHS.append(_map_analyser_skill)
 
 
-def _load_system_prompt() -> str:
+def _load_system_prompt(project_path: str | Path | None = None) -> str:
     parts = [_PROMPT_PATH.read_text(encoding="utf-8")]
     for path in _SKILL_PATHS:
         parts.append(f"\n\n## 参考资料：{path.parent.name}\n")
         parts.append(path.read_text(encoding="utf-8"))
+    project_skills = load_project_skills(project_path)
+    if project_skills:
+        parts.append(project_skills)
     return "\n".join(parts)
 
 
-async def create_ra3_csharp_writer_agent(project_path: str):
+async def create_ra3_csharp_writer_agent(project_path: str | None = None):
     """创建 RA3 C# Writer agent。
 
     ``project_path`` 用作文件工具 backend 的根目录，使 write/read/edit/grep
     等工具直接操作该工程目录。
     """
     load_runtime_env()
+    project_root = resolve_project_root(project_path)
     tools = await load_ra3_companion_tools()
-    backend = FilesystemBackend(root_dir=project_path, virtual_mode=True)
+    backend = FilesystemBackend(root_dir=str(project_root), virtual_mode=True)
     return create_deep_agent(
-        system_prompt=_load_system_prompt(),
+        system_prompt=_load_system_prompt(project_root),
         middleware=[configurable_model, project_context],
         tools=tools,
         backend=backend,
