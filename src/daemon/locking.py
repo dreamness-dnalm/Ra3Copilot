@@ -15,6 +15,7 @@ binds the port becomes the daemon; the other observes health and connects.
 from __future__ import annotations
 
 import os
+import secrets
 import socket
 from pathlib import Path
 
@@ -24,6 +25,7 @@ DAEMON_HOST = "127.0.0.1"
 DEFAULT_DAEMON_PORT = 30035
 PIDFILE_PATH = Path(user_data_path) / "daemon.pid"
 TOKEN_PATH = Path(user_data_path) / "daemon.token"
+TOKEN_BYTES = 32
 
 HEALTH_PATH = "/health"
 BASE_URL_CACHE: str | None = None
@@ -41,6 +43,40 @@ def get_base_url(port: int | None = None) -> str:
 def write_pidfile(port: int) -> None:
     PIDFILE_PATH.parent.mkdir(parents=True, exist_ok=True)
     PIDFILE_PATH.write_text(f"{os.getpid()}\n{port}\n", encoding="utf-8")
+
+
+def read_token() -> str | None:
+    try:
+        token = TOKEN_PATH.read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    return token or None
+
+
+def get_or_create_token() -> str:
+    token = read_token()
+    if token:
+        return token
+
+    TOKEN_PATH.parent.mkdir(parents=True, exist_ok=True)
+    token = secrets.token_urlsafe(TOKEN_BYTES)
+    try:
+        fd = os.open(str(TOKEN_PATH), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    except FileExistsError:
+        existing = read_token()
+        if existing:
+            return existing
+        # The file exists but is empty; replace it with a usable token.
+        TOKEN_PATH.write_text(token, encoding="utf-8")
+    else:
+        with os.fdopen(fd, "w", encoding="utf-8") as file:
+            file.write(token)
+
+    try:
+        os.chmod(TOKEN_PATH, 0o600)
+    except OSError:
+        pass
+    return token
 
 
 def clear_pidfile() -> None:

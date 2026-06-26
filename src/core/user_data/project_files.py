@@ -4,13 +4,19 @@ import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
-from core.user_data.projects import INVALID_PATH_CHARS, RESERVED_PATH_NAMES, ProjectEntry
+from core.user_data.projects import (
+    INVALID_PATH_CHARS,
+    LEGACY_PROJECT_METADATA_FILE,
+    PROJECT_METADATA_FILE,
+    RESERVED_PATH_NAMES,
+    ProjectEntry,
+)
 
 
 MAX_TREE_ENTRIES = 900
 MAX_TEXT_BYTES = 1_000_000
 MAX_PREVIEW_BYTES = 2_000_000
-HIDDEN_NAMES = {".ra3copilot-project.json"}
+HIDDEN_NAMES = {PROJECT_METADATA_FILE, LEGACY_PROJECT_METADATA_FILE}
 TEXT_EXTENSIONS = {
     ".txt",
     ".md",

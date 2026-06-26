@@ -7,6 +7,9 @@ src/dist/
 src/*.spec
 .env.local
 src/.env.local
+node_modules/
 
 # Local agent/workspace scratch
 .agents/
+.codex/
+nul

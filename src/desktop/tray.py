@@ -4,27 +4,67 @@ The tray is owned by the **daemon** process, not the window process, so there is
 exactly one tray icon no matter how many windows are open. It runs on its own
 thread because ``pystray.Icon.run()`` blocks on a native message loop.
 
-"显示主窗口" launches a fresh window process (the daemon owns no window, so it
-cannot un-hide one); "退出" is delegated to a callback the daemon supplies (it
-stops the server and exits). The icon is generated at runtime with Pillow so
+Left-clicking or right-clicking the icon opens the tray menu. "新建窗口" launches
+a fresh window process; "退出" is delegated to a callback the daemon supplies
+(it stops the server and exits). The icon is generated at runtime with Pillow so
 there is no external asset to ship.
 """
 
 from __future__ import annotations
 
+import ctypes
 import subprocess
 import sys
 import threading
+from ctypes import wintypes
 from pathlib import Path
 from typing import Callable
 
 import PIL.Image
 import PIL.ImageDraw
-from pystray import Icon, Menu, MenuItem
+from pystray import Icon as PystrayIcon
+from pystray import Menu, MenuItem
 
 
 APP_TITLE = "Ra3Copilot"
 _ICON_SIZE = 64
+
+
+if sys.platform.startswith("win"):
+    from pystray import _win32 as pystray_win32
+
+    class TrayIcon(pystray_win32.Icon):
+        """Windows tray icon that opens the popup menu on either mouse button."""
+
+        def _popup_menu(self) -> None:
+            if not self._menu_handle:
+                return
+
+            win32 = pystray_win32.win32
+            win32.SetForegroundWindow(self._hwnd)
+
+            point = wintypes.POINT()
+            win32.GetCursorPos(ctypes.byref(point))
+
+            hmenu, descriptors = self._menu_handle
+            index = win32.TrackPopupMenuEx(
+                hmenu,
+                win32.TPM_RIGHTALIGN | win32.TPM_BOTTOMALIGN | win32.TPM_RETURNCMD,
+                point.x,
+                point.y,
+                self._menu_hwnd,
+                None,
+            )
+            if index > 0:
+                descriptors[index - 1](self)
+
+        def _on_notify(self, wparam, lparam):
+            win32 = pystray_win32.win32
+            if lparam in (win32.WM_LBUTTONUP, win32.WM_RBUTTONUP):
+                self._popup_menu()
+
+else:
+    TrayIcon = PystrayIcon
 
 
 def _make_icon_image() -> PIL.Image.Image:
@@ -47,18 +87,16 @@ def _make_icon_image() -> PIL.Image.Image:
     return image
 
 
-def launch_window_command() -> list[str]:
-    """Command to start a window process, in both source and frozen modes."""
+def _window_launch_target() -> tuple[list[str], Path]:
+    """Command/cwd to launch a new desktop window in source or frozen mode."""
     if getattr(sys, "frozen", False):
-        # The frozen exe dispatches by argv token (see __main__.py); a bare
-        # invocation runs the desktop window.
-        return [sys.executable]
+        return [sys.executable], Path(sys.executable).resolve().parent
+
     src_root = Path(__file__).resolve().parents[1]
     command = [sys.executable, "-m", "desktop.app"]
     if "--debug" in sys.argv:
         command.append("--debug")
-    del src_root
-    return command
+    return command, src_root
 
 
 class TrayController:
@@ -76,12 +114,12 @@ class TrayController:
         self._quit_app = quit_app
 
         menu = Menu(
-            MenuItem("显示主窗口", self._on_show, default=True),
+            MenuItem(APP_TITLE, self._noop, enabled=False),
+            MenuItem("新建窗口", self._on_new_window),
             Menu.SEPARATOR,
             MenuItem("退出", self._on_quit),
         )
-        self._icon = Icon("Ra3Copilot", _make_icon_image(), APP_TITLE, menu)
-        self._icon.on_left_click = self._on_show
+        self._icon = TrayIcon("Ra3Copilot", _make_icon_image(), APP_TITLE, menu)
 
         self._thread = threading.Thread(
             target=self._icon.run,
@@ -107,10 +145,15 @@ class TrayController:
 
     # -- tray callbacks (run on the tray thread) -------------------------
 
-    def _on_show(self, _icon=None, _item=None) -> None:
+    def _noop(self, _icon=None, _item=None) -> None:
+        pass
+
+    def _on_new_window(self, _icon=None, _item=None) -> None:
         try:
+            command, cwd = _window_launch_target()
             subprocess.Popen(
-                launch_window_command(),
+                command,
+                cwd=str(cwd),
                 stdin=subprocess.DEVNULL,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,

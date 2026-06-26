@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Ra3Copilot 工作台</title>
+  <link rel="stylesheet" href="./vendor/codemirror/codemirror.css" />
   <style>
     :root {
       --bg: oklch(98.7% 0.004 86);
@@ -332,14 +333,17 @@
       grid-template-columns: 272px minmax(0, 1fr) 0px;
     }
 
+    .workspace.settings-mode,
     .workspace.welcome-mode {
       grid-template-columns: minmax(0, 1fr);
     }
 
+    .workspace.settings-mode .sidebar,
     .workspace.welcome-mode .sidebar {
       display: none;
     }
 
+    .workspace.settings-mode .side-panel,
     .workspace.welcome-mode .side-panel {
       display: none;
     }
@@ -797,11 +801,45 @@
       line-height: 1.65;
     }
 
+    .welcome-section {
+      margin-top: 30px;
+    }
+
+    .welcome-section-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+
+    .welcome-section-head h2 {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.3;
+    }
+
+    .welcome-section-head span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
     .agent-choice-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 14px;
       margin-top: 34px;
+    }
+
+    .agent-choice-grid.scenario-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 0;
+    }
+
+    .agent-choice-grid.scenario-grid .agent-choice {
+      min-height: 208px;
+      padding: 20px;
+      border-radius: 12px;
     }
 
     .agent-choice {
@@ -1195,6 +1233,11 @@
       display: none;
     }
 
+    .settings-section[hidden],
+    .settings-row[hidden] {
+      display: none;
+    }
+
     .settings-title {
       margin: 0 0 34px;
     }
@@ -1276,6 +1319,7 @@
     }
 
     .settings-input,
+    .settings-textarea,
     .settings-select {
       width: 100%;
       min-height: 34px;
@@ -1288,9 +1332,17 @@
     }
 
     .settings-input:focus,
+    .settings-textarea:focus,
     .settings-select:focus {
       border-color: color-mix(in oklch, var(--accent) 50%, var(--border));
       background: var(--surface);
+    }
+
+    .settings-textarea {
+      min-height: 168px;
+      padding: 10px;
+      resize: vertical;
+      font: 12px/1.6 var(--font-mono);
     }
 
     .settings-input[type="password"] {
@@ -1385,6 +1437,71 @@
 
     .settings-actions.left {
       justify-content: flex-start;
+    }
+
+    .settings-footer-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .qq-bot-binding {
+      display: grid;
+      gap: 12px;
+      padding: 16px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .qq-bot-binding-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 12px;
+    }
+
+    .qq-bot-binding-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .qq-bot-binding-title {
+      display: grid;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .qq-bot-binding-title strong {
+      font-size: 13px;
+    }
+
+    .qq-bot-binding-title span,
+    .qq-bot-status {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .soul-editor-grid {
+      display: grid;
+      grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .soul-init-options {
+      display: grid;
+      gap: 10px;
+    }
+
+    .soul-init-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
     }
 
     .settings-toolbar {
@@ -2603,6 +2720,7 @@
       --file-code-padding: 12px;
       --file-code-font-size: 12px;
       --file-code-line-height: 18px;
+      --file-code-font-family: var(--font-mono);
     }
 
     .file-code-preview,
@@ -2619,13 +2737,17 @@
     }
 
     .file-code-preview {
-      font: var(--file-code-font-size)/var(--file-code-line-height) var(--font-mono);
+      font-family: var(--file-code-font-family);
+      font-size: var(--file-code-font-size);
+      line-height: var(--file-code-line-height);
       tab-size: 2;
       white-space: pre;
       overflow-wrap: normal;
       word-break: normal;
       font-variant-ligatures: none;
       font-feature-settings: "liga" 0, "calt" 0;
+      font-kerning: none;
+      font-synthesis: none;
       text-rendering: auto;
     }
 
@@ -2743,8 +2865,8 @@
       background: var(--surface-2);
     }
 
-    .file-editor-highlight,
-    .file-editor {
+    .file-editor,
+    .file-editor-shell .CodeMirror {
       position: absolute;
       inset: 0;
       width: 100%;
@@ -2753,7 +2875,9 @@
       margin: 0;
       padding: var(--file-code-padding);
       border: 0;
-      font: var(--file-code-font-size)/var(--file-code-line-height) var(--font-mono);
+      font-family: var(--file-code-font-family);
+      font-size: var(--file-code-font-size);
+      line-height: var(--file-code-line-height);
       tab-size: 2;
       white-space: pre;
       overflow-wrap: normal;
@@ -2761,30 +2885,64 @@
       letter-spacing: 0;
       font-variant-ligatures: none;
       font-feature-settings: "liga" 0, "calt" 0;
+      font-kerning: none;
+      font-synthesis: none;
       text-rendering: auto;
     }
 
-    .file-editor-highlight {
-      overflow: hidden;
-      pointer-events: none;
+    .file-editor {
+      resize: none;
+      outline: 0;
+      overflow: auto;
       background: var(--surface-2);
-      color: var(--fg);
+      color: var(--code-fg);
     }
 
-    .file-editor-highlight code {
-      display: block;
-      min-width: max-content;
-      white-space: pre;
+    .file-editor-shell .CodeMirror {
+      padding: 0;
+      background: var(--surface-2);
+      color: var(--code-fg);
+    }
+
+    .file-editor-shell .CodeMirror-scroll {
+      min-height: 260px;
+    }
+
+    .file-editor-shell .CodeMirror-lines {
+      padding: var(--file-code-padding) 0;
+    }
+
+    .file-editor-shell .CodeMirror pre.CodeMirror-line,
+    .file-editor-shell .CodeMirror pre.CodeMirror-line-like {
+      padding: 0 var(--file-code-padding);
+      font-family: var(--file-code-font-family);
+      font-size: var(--file-code-font-size);
+      line-height: var(--file-code-line-height);
+      letter-spacing: 0;
+      font-variant-ligatures: none;
+      font-feature-settings: "liga" 0, "calt" 0;
+      font-kerning: none;
+      font-synthesis: none;
+    }
+
+    .file-editor-shell .CodeMirror-cursor {
+      border-left: 1px solid var(--fg);
+    }
+
+    .file-editor-shell .CodeMirror-selected,
+    .file-editor-shell .CodeMirror-focused .CodeMirror-selected {
+      background: color-mix(in oklch, var(--accent) 20%, transparent);
+    }
+
+    .file-editor-shell .CodeMirror-gutters {
+      background: var(--surface-2);
+      border-right: 1px solid var(--border);
     }
 
     .file-code-preview [class^="tok-"],
     .file-code-preview [class*=" tok-"],
     .file-code-preview [class^="hljs-"],
     .file-code-preview [class*=" hljs-"],
-    .file-editor-highlight [class^="tok-"],
-    .file-editor-highlight [class*=" tok-"],
-    .file-editor-highlight [class^="hljs-"],
-    .file-editor-highlight [class*=" hljs-"],
     .message-body pre code [class^="hljs-"],
     .message-body pre code [class*=" hljs-"],
     .file-markdown-preview pre code [class^="hljs-"],
@@ -2794,7 +2952,6 @@
       text-decoration: none;
     }
 
-    body,
     body[data-code-highlight-theme="vivid"] {
       --code-fg: var(--fg);
       --code-comment: oklch(47% 0.045 245);
@@ -2808,6 +2965,7 @@
       --code-meta: oklch(48% 0.20 318);
     }
 
+    body,
     body[data-code-highlight-theme="github"] {
       --code-fg: oklch(28% 0.018 250);
       --code-comment: oklch(52% 0.032 248);
@@ -2848,7 +3006,6 @@
     }
 
     .file-code-preview .hljs,
-    .file-editor-highlight .hljs,
     .file-markdown-preview pre code.hljs,
     .message-body pre code.hljs {
       background: transparent;
@@ -2856,57 +3013,63 @@
     }
 
     .tok-comment,
+    .cm-comment,
     .hljs-comment,
     .hljs-quote { color: var(--code-comment); }
     .tok-keyword,
+    .cm-keyword,
     .hljs-keyword,
     .hljs-selector-tag,
     .hljs-subst { color: var(--code-keyword); }
     .tok-string,
+    .cm-string,
+    .cm-string-2,
     .hljs-string,
     .hljs-regexp,
     .hljs-symbol,
     .hljs-bullet { color: var(--code-string); }
     .tok-number,
+    .cm-number,
     .hljs-number { color: var(--code-number); }
     .tok-bool,
+    .cm-atom,
     .hljs-literal { color: var(--code-literal); }
     .tok-tag,
+    .cm-tag,
+    .cm-def,
     .hljs-name,
     .hljs-title,
     .hljs-section { color: var(--code-title); }
     .tok-attr,
+    .cm-attribute,
+    .cm-property,
+    .cm-variable,
+    .cm-variable-2,
+    .cm-variable-3,
     .hljs-attr,
     .hljs-attribute,
     .hljs-variable,
     .hljs-template-variable { color: var(--code-attr); }
     .tok-punctuation,
+    .cm-punctuation,
+    .cm-operator,
+    .cm-bracket,
     .hljs-punctuation,
     .hljs-operator { color: var(--code-punctuation); }
     .tok-heading,
+    .cm-header,
+    .cm-builtin,
+    .cm-type,
     .hljs-built_in,
     .hljs-type,
     .hljs-class .hljs-title { color: var(--code-title); }
     .tok-meta,
+    .cm-meta,
+    .cm-link,
     .hljs-meta,
     .hljs-doctag,
     .hljs-selector-id,
     .hljs-selector-class { color: var(--code-meta); }
-
-    .file-editor {
-      z-index: 1;
-      resize: none;
-      outline: 0;
-      overflow: auto;
-      background: transparent;
-      color: transparent;
-      caret-color: var(--fg);
-    }
-
-    .file-editor::selection {
-      background: color-mix(in oklch, var(--accent) 20%, transparent);
-      color: transparent;
-    }
 
     .file-editor[readonly] {
       cursor: default;
@@ -3006,12 +3169,17 @@
         padding: 64px 0 56px;
       }
 
+      .agent-choice-grid.scenario-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
       .settings-row {
         grid-template-columns: minmax(0, 1fr);
         gap: 10px;
       }
 
       .model-price-grid,
+      .soul-editor-grid,
       .usage-summary-grid {
         grid-template-columns: minmax(0, 1fr);
       }
@@ -3030,12 +3198,23 @@
       .settings-pane { grid-template-columns: 210px 1fr; }
       .welcome-shell { width: calc(100% - 40px); }
       .agent-choice-grid { grid-template-columns: minmax(0, 1fr); }
+      .agent-choice-grid.scenario-grid { grid-template-columns: minmax(0, 1fr); }
       .welcome-actions { grid-template-columns: minmax(0, 1fr); }
       .welcome-detail-head { flex-direction: column; }
     }
   </style>
   <script src="./vendor/markdown-it.min.js"></script>
   <script src="./vendor/highlight.min.js"></script>
+  <script src="./vendor/codemirror/codemirror.js"></script>
+  <script src="./vendor/codemirror/mode/xml.js"></script>
+  <script src="./vendor/codemirror/mode/javascript.js"></script>
+  <script src="./vendor/codemirror/mode/css.js"></script>
+  <script src="./vendor/codemirror/mode/htmlmixed.js"></script>
+  <script src="./vendor/codemirror/mode/markdown.js"></script>
+  <script src="./vendor/codemirror/mode/clike.js"></script>
+  <script src="./vendor/codemirror/mode/python.js"></script>
+  <script src="./vendor/codemirror/mode/powershell.js"></script>
+  <script src="./vendor/codemirror/mode/shell.js"></script>
 </head>
 <body>
   <div class="app-stage">
@@ -3074,8 +3253,8 @@
           </div>
         </div>
         <div class="titlebar-title pywebview-drag-region">
-          <strong>分析日冕地图脚本</strong>
-          <span>Ra3Copilot</span>
+          <strong id="windowTitleText">Ra3Copilot</strong>
+          <span id="windowSubtitleText">工作台</span>
         </div>
         <div class="top-actions pywebview-drag-region">
           <div class="win-actions">
@@ -3097,6 +3276,7 @@
               </div>
             </div>
             <div class="global-actions" aria-label="全局入口">
+              <button class="global-action" type="button" id="openNewWindowBtn"><span class="nav-icon" aria-hidden="true">□</span>新窗口</button>
               <button class="global-action" type="button" id="newChatBtn"><span class="nav-icon" aria-hidden="true">○</span>快速对话</button>
             </div>
           </div>
@@ -3159,23 +3339,58 @@
 
         <main class="welcome-pane" id="welcomePane" aria-label="欢迎页">
           <section class="welcome-shell">
-            <section class="welcome-stage" id="agentSelectPane" aria-label="智能体选择">
+            <section class="welcome-stage" id="agentSelectPane" aria-label="任务场景选择">
               <div>
                 <div class="welcome-kicker">Ra3Copilot</div>
-                <h1 class="welcome-title">选择智能体</h1>
+                <h1 class="welcome-title">开始你的任务</h1>
+                <p class="welcome-copy">先选择要处理的项目或功能场景。Ra3Copilot 会根据入口自动切换通用能力、RA3 优化能力，或展示已接入 IM 的项目。</p>
               </div>
 
-              <div class="agent-choice-grid" aria-label="智能体入口">
+              <section class="welcome-section" aria-label="继续工作">
+                <div class="welcome-section-head">
+                  <h2>继续工作</h2>
+                  <span>最近打开的项目</span>
+                </div>
+                <div class="recent-projects" id="homeRecentProjectsList">
+                  <div class="recent-empty">正在读取最近项目...</div>
+                </div>
+              </section>
+
+              <section class="welcome-section" aria-label="开始新任务">
+                <div class="welcome-section-head">
+                  <h2>开始新任务</h2>
+                </div>
+                <div class="welcome-actions">
+                  <button class="welcome-action primary" type="button" id="quickOpenWorkspaceBtn">
+                    <strong>打开文件夹</strong>
+                    <span>选择任意本地文件夹，作为通用工作区与 Agent 交互。</span>
+                  </button>
+                  <button class="welcome-action" type="button" id="quickCreateWorkspaceBtn">
+                    <strong>新建项目</strong>
+                    <span>创建一个新的本地工作区，适合写作、代码、资料整理和通用任务。</span>
+                  </button>
+                  <button class="welcome-action" type="button" id="quickOpenMapProjectBtn">
+                    <strong>打开 RA3 地图</strong>
+                    <span>选择 RA3 地图文件夹，并把该目录标记为地图开发工程。</span>
+                  </button>
+                </div>
+              </section>
+
+              <section class="welcome-section" aria-label="功能入口">
+                <div class="welcome-section-head">
+                  <h2>功能入口</h2>
+                </div>
+                <div class="agent-choice-grid scenario-grid" aria-label="功能场景入口">
                 <button class="agent-choice" type="button" id="selectRa3AgentBtn">
                   <span class="agent-choice-top">
                     <span class="agent-chip">地图工程</span>
                   </span>
                   <span>
-                    <span class="agent-name">RA3 智能体</span>
-                    <span class="agent-description">针对 RA3 进行特别定制的智能体。</span>
+                    <span class="agent-name">RA3 地图开发</span>
+                    <span class="agent-description">打开或创建 RA3 地图工程，使用 RA3 Companion 工具与地图脚本上下文。</span>
                   </span>
                   <span class="agent-choice-foot">
-                    <strong>进入 RA3 工作流</strong>
+                    <strong>进入 RA3 场景</strong>
                     <span class="agent-arrow" aria-hidden="true">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path d="M5 12h14"></path>
@@ -3190,11 +3405,11 @@
                     <span class="agent-chip">通用任务</span>
                   </span>
                   <span>
-                    <span class="agent-name">万能智能体</span>
-                    <span class="agent-description">可以做任何事情的智能体，协助高效工作学习。</span>
+                    <span class="agent-name">通用工作台</span>
+                    <span class="agent-description">处理普通文件夹、写作、代码、资料整理和日常计划。</span>
                   </span>
                   <span class="agent-choice-foot">
-                    <strong>进入通用工作流</strong>
+                    <strong>进入通用场景</strong>
                     <span class="agent-arrow" aria-hidden="true">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path d="M5 12h14"></path>
@@ -3203,7 +3418,27 @@
                     </span>
                   </span>
                 </button>
-              </div>
+
+                <button class="agent-choice secondary" type="button" id="selectAssistantBtn">
+                  <span class="agent-choice-top">
+                    <span class="agent-chip">IM 接入</span>
+                  </span>
+                  <span>
+                    <span class="agent-name">得力助手</span>
+                    <span class="agent-description">打开已经接入 QQ Bot 等 IM 的项目，从聊天入口访问同一个 Agent。</span>
+                  </span>
+                  <span class="agent-choice-foot">
+                    <strong>查看已接入项目</strong>
+                    <span class="agent-arrow" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M5 12h14"></path>
+                        <path d="M13 6l6 6-6 6"></path>
+                      </svg>
+                    </span>
+                  </span>
+                </button>
+                </div>
+              </section>
             </section>
 
             <section class="welcome-stage" id="ra3WelcomePane" aria-label="RA3 智能体欢迎页" hidden>
@@ -3273,6 +3508,26 @@
                 </div>
                 <div class="recent-projects" id="universalRecentProjectsList">
                   <div class="recent-empty">正在读取最近工作区...</div>
+                </div>
+              </section>
+            </section>
+
+            <section class="welcome-stage" id="assistantWelcomePane" aria-label="得力助手欢迎页" hidden>
+              <div class="welcome-detail-head">
+                <div>
+                  <div class="welcome-kicker">得力助手</div>
+                  <h1 class="welcome-title">已接入 IM 的项目</h1>
+                  <p class="welcome-copy">这里展示所有已绑定 QQ Bot 等 IM 入口的项目。要接入新的项目，先打开任意项目，再到设置里的“当前工作区 / IM 接入”添加绑定。</p>
+                </div>
+                <button class="back-agent-btn" type="button" data-agent-back>返回开始页</button>
+              </div>
+
+              <section class="recent-section" aria-label="已接入 IM 的项目">
+                <div class="recent-head">
+                  <h2>已绑定 IM</h2>
+                </div>
+                <div class="recent-projects" id="assistantRecentProjectsList">
+                  <div class="recent-empty">正在读取已接入 IM 的项目...</div>
                 </div>
               </section>
             </section>
@@ -3370,7 +3625,7 @@
               <input id="settingsSearch" type="search" placeholder="搜索设置..." />
             </label>
             <div class="settings-nav-group">
-              <div class="settings-nav-label">模型</div>
+              <div class="settings-nav-label">通用配置</div>
               <button class="settings-tab-btn active" type="button" data-settings-tab="providers">
                 <span class="nav-icon" aria-hidden="true">□</span>
                 <span>Provider</span>
@@ -3387,9 +3642,24 @@
                 <span class="nav-icon" aria-hidden="true">◌</span>
                 <span>观测</span>
               </button>
+              <button class="settings-tab-btn" type="button" data-settings-tab="soul">
+                <span class="nav-icon" aria-hidden="true">魂</span>
+                <span>SOUL 预设</span>
+              </button>
               <button class="settings-tab-btn" type="button" data-settings-tab="interface">
                 <span class="nav-icon" aria-hidden="true">UI</span>
                 <span>界面</span>
+              </button>
+            </div>
+            <div class="settings-nav-group">
+              <div class="settings-nav-label">当前工作区</div>
+              <button class="settings-tab-btn" type="button" data-settings-tab="assistant">
+                <span class="nav-icon" aria-hidden="true">魂</span>
+                <span>SOUL</span>
+              </button>
+              <button class="settings-tab-btn" type="button" data-settings-tab="qqbot">
+                <span class="nav-icon" aria-hidden="true">助</span>
+                <span>IM 接入</span>
               </button>
             </div>
           </aside>
@@ -3737,6 +4007,121 @@
                 </div>
               </section>
             </section>
+
+            <section class="settings-page" id="soulSettingsPage" hidden>
+              <header class="settings-title">
+                <h1>SOUL 预设</h1>
+                <p>管理可在工作区中套用的 SOUL。内置预设不可修改；自定义预设保存在本机总体配置中。</p>
+              </header>
+
+              <section class="settings-section">
+                <div class="settings-toolbar">
+                  <button class="primary-btn" type="button" id="newSoulPresetBtn">新增 SOUL</button>
+                  <span class="settings-help" id="soulPresetStatusText">选择一个预设后可以查看或编辑。</span>
+                </div>
+                <div class="settings-panel">
+                  <div class="settings-row block">
+                    <div class="soul-editor-grid">
+                      <div class="settings-list" id="soulPresetList"></div>
+                      <div class="settings-list">
+                        <label class="settings-field">
+                          <span>名称</span>
+                          <input class="settings-input" id="soulPresetNameInput" type="text" placeholder="例如：严谨审稿人" />
+                        </label>
+                        <label class="settings-field">
+                          <span>内容</span>
+                          <textarea class="settings-textarea" id="soulPresetContentInput" placeholder="写下这个 SOUL 对 Agent 人格、语气、偏好和工作方式的约束。"></textarea>
+                        </label>
+                        <div class="settings-actions">
+                          <button class="primary-btn" type="button" id="saveSoulPresetBtn">保存 SOUL</button>
+                          <button class="danger-btn" type="button" id="deleteSoulPresetBtn">删除</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </section>
+
+            <section class="settings-page" id="assistantSettingsPage" hidden>
+              <header class="settings-title">
+                <h1>SOUL</h1>
+                <p>为当前工作区选择一个 SOUL 预设。保存后会写入该项目的 <code>.agent/workspace_config.json</code>，并同步维护根目录的 <code>SOUL.md</code>。</p>
+                <p class="settings-help" id="workspaceConfigProjectText">尚未打开工作区。</p>
+              </header>
+
+              <section class="settings-section" id="workspaceSoulSettingsSection">
+                <h2 class="section-heading">工作区 SOUL</h2>
+                <div class="settings-panel">
+                  <div class="settings-row">
+                    <div class="settings-row-label">
+                      <strong>SOUL 预设</strong>
+                      <span id="workspaceSoulStatusText">选择预设后，保存时会覆盖当前工作区根目录的 <code>SOUL.md</code>。</span>
+                    </div>
+                    <div class="settings-control">
+                      <select class="settings-select" id="workspaceSoulPresetSelect"></select>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <div class="settings-footer-actions">
+                <span id="workspaceSoulSaveStatusText">工作区 SOUL 配置尚未加载。</span>
+                <div class="settings-actions">
+                  <button class="ghost-btn" type="button" id="reloadWorkspaceSettingsBtn">刷新</button>
+                  <button class="primary-btn" type="button" id="saveWorkspaceSoulSettingsBtn">保存 SOUL</button>
+                </div>
+              </div>
+            </section>
+
+            <section class="settings-page" id="qqBotSettingsPage" hidden>
+              <header class="settings-title">
+                <h1>IM 接入</h1>
+                <p>为当前工作区绑定一个或多个 IM 入口。当前支持 QQ Bot；绑定保存在该项目的 <code>.agent/workspace_config.json</code> 中。</p>
+                <p class="settings-help" id="qqBotWorkspaceStatusText">尚未打开工作区。</p>
+              </header>
+
+              <section class="settings-section" id="assistantQqBotSettingsSection">
+                <h2 class="section-heading">QQ Bot 绑定</h2>
+                <div class="settings-panel">
+                  <div class="settings-row">
+                    <div class="settings-row-label">
+                      <strong>QQ Bot</strong>
+                      <span>每条绑定都连接当前工作区。可在 <a href="https://q.qq.com/qqbot/openclaw/" target="_blank" rel="noopener noreferrer">QQ 机器人开放平台</a> 获取 AppID 和 AppSecret。</span>
+                    </div>
+                    <div class="settings-actions">
+                      <button class="ghost-btn" type="button" id="addAssistantQqBotBindingBtn">添加 QQ Bot</button>
+                    </div>
+                  </div>
+                  <div id="assistantQqBotBindingsList"></div>
+                  <div class="settings-row" id="assistantQqBotEmptyRow">
+                    <div class="settings-row-label">
+                      <strong>还没有 QQ Bot 绑定</strong>
+                      <span>添加一条绑定后，这个工作区就可以通过对应 QQ Bot 访问。</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="settings-section" id="workspaceConfigUnavailableSection" hidden>
+                <div class="settings-panel">
+                  <div class="settings-row">
+                    <div class="settings-row-label">
+                      <strong>尚未打开工作区</strong>
+                      <span>打开任意工作区后，都可以在这里接入 QQ Bot。未来新增 IM 类型也会出现在这里。</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <div class="settings-footer-actions">
+                <span id="assistantBindingStatusText">工作区配置尚未加载。</span>
+                <div class="settings-actions">
+                  <button class="ghost-btn" type="button" id="reloadQqBotSettingsBtn">刷新</button>
+                  <button class="primary-btn" type="button" id="saveAssistantSettingsBtn">保存 IM 接入</button>
+                </div>
+              </div>
+            </section>
           </section>
         </main>
 
@@ -3776,6 +4161,32 @@
                   </div>
                   <div class="settings-actions">
                     <button class="primary-btn" type="button" id="confirmProjectCreateBtn">创建并打开</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="modal-backdrop hidden" id="soulInitDialog" role="dialog" aria-modal="true" aria-labelledby="soulInitDialogTitle">
+          <section class="project-dialog">
+            <header class="dialog-header">
+              <h2 id="soulInitDialogTitle">选择工作区 SOUL</h2>
+            </header>
+            <div class="dialog-body">
+              <div class="settings-panel">
+                <div class="settings-row block">
+                  <div class="soul-init-options">
+                    <div class="settings-row-label">
+                      <strong id="soulInitProjectText">新项目已初始化</strong>
+                      <span>SOUL 会写入项目根目录的 <code>SOUL.md</code>，之后可在工作区配置中切换或移除。</span>
+                    </div>
+                    <select class="settings-select" id="soulInitPresetSelect"></select>
+                    <span class="soul-init-note">跳过后项目默认没有 SOUL，可稍后再配置。</span>
+                    <div class="settings-actions">
+                      <button class="ghost-btn" type="button" id="skipSoulInitBtn">跳过</button>
+                      <button class="primary-btn" type="button" id="applySoulInitBtn">应用 SOUL</button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -3907,7 +4318,6 @@
                 <pre class="file-code-preview" id="fileCodePreview" aria-label="代码预览"><code></code></pre>
                 <div class="file-markdown-preview hidden" id="fileMarkdownPreview" aria-label="Markdown 预览"></div>
                 <div class="file-editor-shell hidden" id="fileEditorShell">
-                  <pre class="file-editor-highlight" id="fileEditorHighlight" aria-hidden="true"><code></code></pre>
                   <textarea class="file-editor" id="fileEditor" spellcheck="false" wrap="off" readonly></textarea>
                 </div>
               </div>
@@ -3965,6 +4375,8 @@
       projectsLoadedFromBridge: false,
       settingsTab: "providers",
       settings: null,
+      workspaceConfig: null,
+      workspaceRuntime: null,
       settingsLoadedFromBridge: false,
       conversationUsage: null,
       conversationUsageId: "",
@@ -3984,6 +4396,8 @@
       fetchedModels: [],
       selectedModelKey: "",
       modelEditorMode: "edit",
+      selectedSoulPresetId: "",
+      soulPresetEditorMode: "edit",
       usage: null,
       usageMetric: "tokens",
       usageLoadedFromBridge: false,
@@ -4028,12 +4442,19 @@
     const runtimeOutputTokens = document.getElementById("runtimeOutputTokens");
     const runtimeCacheRate = document.getElementById("runtimeCacheRate");
     const runtimeCost = document.getElementById("runtimeCost");
+    const openNewWindowBtn = document.getElementById("openNewWindowBtn");
     const welcomePane = document.getElementById("welcomePane");
     const agentSelectPane = document.getElementById("agentSelectPane");
     const ra3WelcomePane = document.getElementById("ra3WelcomePane");
     const universalWelcomePane = document.getElementById("universalWelcomePane");
+    const assistantWelcomePane = document.getElementById("assistantWelcomePane");
+    const homeRecentProjectsList = document.getElementById("homeRecentProjectsList");
+    const quickOpenWorkspaceBtn = document.getElementById("quickOpenWorkspaceBtn");
+    const quickCreateWorkspaceBtn = document.getElementById("quickCreateWorkspaceBtn");
+    const quickOpenMapProjectBtn = document.getElementById("quickOpenMapProjectBtn");
     const selectRa3AgentBtn = document.getElementById("selectRa3AgentBtn");
     const selectUniversalAgentBtn = document.getElementById("selectUniversalAgentBtn");
+    const selectAssistantBtn = document.getElementById("selectAssistantBtn");
     const agentBackButtons = Array.from(document.querySelectorAll("[data-agent-back]"));
     const startDefaultProjectBtn = document.getElementById("startDefaultProjectBtn");
     const createProjectBtn = document.getElementById("createProjectBtn");
@@ -4041,8 +4462,11 @@
     const startUniversalProjectBtn = document.getElementById("startUniversalProjectBtn");
     const createUniversalProjectBtn = document.getElementById("createUniversalProjectBtn");
     const openWorkspaceProjectBtn = document.getElementById("openWorkspaceProjectBtn");
+    const createAssistantProjectBtn = document.getElementById("createAssistantProjectBtn");
+    const openAssistantProjectBtn = document.getElementById("openAssistantProjectBtn");
     const recentProjectsList = document.getElementById("recentProjectsList");
     const universalRecentProjectsList = document.getElementById("universalRecentProjectsList");
+    const assistantRecentProjectsList = document.getElementById("assistantRecentProjectsList");
     const projectsDirLabel = document.getElementById("projectsDirLabel");
     const projectDialog = document.getElementById("projectDialog");
     const projectDialogTitle = document.getElementById("projectDialogTitle");
@@ -4055,6 +4479,8 @@
     const projectOperationHint = document.getElementById("projectOperationHint");
     const projectRootLabel = document.getElementById("projectRootLabel");
     const sessionTitle = document.getElementById("sessionTitle");
+    const windowTitleText = document.getElementById("windowTitleText");
+    const windowSubtitleText = document.getElementById("windowSubtitleText");
     const runStatusLabel = document.getElementById("runStatusLabel");
     const newChatBtn = document.getElementById("newChatBtn");
     const conversationList = document.getElementById("conversationList");
@@ -4095,7 +4521,6 @@
     const fileCodePreview = document.getElementById("fileCodePreview");
     const fileMarkdownPreview = document.getElementById("fileMarkdownPreview");
     const fileEditorShell = document.getElementById("fileEditorShell");
-    const fileEditorHighlight = document.getElementById("fileEditorHighlight");
     const fileEditor = document.getElementById("fileEditor");
     const reloadFileBtn = document.getElementById("reloadFileBtn");
     const saveFileBtn = document.getElementById("saveFileBtn");
@@ -4104,6 +4529,9 @@
     const modelsSettingsPage = document.getElementById("modelsSettingsPage");
     const usageSettingsPage = document.getElementById("usageSettingsPage");
     const observabilitySettingsPage = document.getElementById("observabilitySettingsPage");
+    const assistantSettingsPage = document.getElementById("assistantSettingsPage");
+    const qqBotSettingsPage = document.getElementById("qqBotSettingsPage");
+    const soulSettingsPage = document.getElementById("soulSettingsPage");
     const interfaceSettingsPage = document.getElementById("interfaceSettingsPage");
     const providerPresetSelect = document.getElementById("providerPresetSelect");
     const providerNameInput = document.getElementById("providerNameInput");
@@ -4157,12 +4585,41 @@
     const observabilityProjectInput = document.getElementById("observabilityProjectInput");
     const observabilityStatusText = document.getElementById("observabilityStatusText");
     const saveObservabilityBtn = document.getElementById("saveObservabilityBtn");
+    const soulPresetList = document.getElementById("soulPresetList");
+    const newSoulPresetBtn = document.getElementById("newSoulPresetBtn");
+    const soulPresetNameInput = document.getElementById("soulPresetNameInput");
+    const soulPresetContentInput = document.getElementById("soulPresetContentInput");
+    const saveSoulPresetBtn = document.getElementById("saveSoulPresetBtn");
+    const deleteSoulPresetBtn = document.getElementById("deleteSoulPresetBtn");
+    const soulPresetStatusText = document.getElementById("soulPresetStatusText");
+    const workspaceConfigProjectText = document.getElementById("workspaceConfigProjectText");
+    const workspaceSoulSettingsSection = document.getElementById("workspaceSoulSettingsSection");
+    const workspaceSoulPresetSelect = document.getElementById("workspaceSoulPresetSelect");
+    const workspaceSoulStatusText = document.getElementById("workspaceSoulStatusText");
+    const workspaceSoulSaveStatusText = document.getElementById("workspaceSoulSaveStatusText");
+    const saveWorkspaceSoulSettingsBtn = document.getElementById("saveWorkspaceSoulSettingsBtn");
+    const qqBotWorkspaceStatusText = document.getElementById("qqBotWorkspaceStatusText");
+    const assistantQqBotSettingsSection = document.getElementById("assistantQqBotSettingsSection");
+    const workspaceConfigUnavailableSection = document.getElementById("workspaceConfigUnavailableSection");
+    const assistantQqBotBindingsList = document.getElementById("assistantQqBotBindingsList");
+    const assistantQqBotEmptyRow = document.getElementById("assistantQqBotEmptyRow");
+    const addAssistantQqBotBindingBtn = document.getElementById("addAssistantQqBotBindingBtn");
+    const reloadWorkspaceSettingsBtn = document.getElementById("reloadWorkspaceSettingsBtn");
+    const reloadQqBotSettingsBtn = document.getElementById("reloadQqBotSettingsBtn");
+    const assistantBindingStatusText = document.getElementById("assistantBindingStatusText");
+    const saveAssistantSettingsBtn = document.getElementById("saveAssistantSettingsBtn");
+    const soulInitDialog = document.getElementById("soulInitDialog");
+    const soulInitProjectText = document.getElementById("soulInitProjectText");
+    const soulInitPresetSelect = document.getElementById("soulInitPresetSelect");
+    const skipSoulInitBtn = document.getElementById("skipSoulInitBtn");
+    const applySoulInitBtn = document.getElementById("applySoulInitBtn");
     const codeHighlightThemeSelect = document.getElementById("codeHighlightThemeSelect");
     const codeHighlightThemeStatus = document.getElementById("codeHighlightThemeStatus");
     const SETTINGS_CACHE_KEY = "ra3copilot.settingsSnapshot.v1";
     const USAGE_DISPLAY_KEY = "ra3copilot.showUsageDetails.v1";
     const AGENT_MODE_KEY = "ra3copilot.agentMode.v1";
     const CODE_HIGHLIGHT_THEME_KEY = "ra3copilot.codeHighlightTheme.v1";
+    const DEFAULT_CODE_HIGHLIGHT_THEME = "github";
     const CODE_HIGHLIGHT_THEMES = [
       { id: "vivid", label: "鲜明", description: "高饱和浅色主题，适合快速扫代码。" },
       { id: "github", label: "GitHub", description: "接近 GitHub Light 的克制配色。" },
@@ -4175,7 +4632,7 @@
         projectLabel: "地图工程",
         projectBadge: "地图工程",
         createTitle: "新建地图工程",
-        createHint: "默认保存在用户数据的 projects 目录下；目录不存在会自动创建。",
+        createHint: "默认保存在 RA3 地图专用项目目录下；目录不存在会自动创建。",
         createEmptyHint: "新工程不能保存到非空文件夹；保存目录不能包含 Windows 非法字符。",
         sessionFallback: "RA3 对话",
         projectReady: "地图工程已打开，准备读取脚本与配置",
@@ -4190,7 +4647,7 @@
         projectLabel: "工作区",
         projectBadge: "工作区",
         createTitle: "新建工作区",
-        createHint: "默认保存在用户数据的 projects 目录下；目录不存在会自动创建。",
+        createHint: "默认保存在通用工作区专用项目目录下；目录不存在会自动创建。",
         createEmptyHint: "新工作区不能保存到非空文件夹；保存目录不能包含 Windows 非法字符。",
         sessionFallback: "通用对话",
         projectReady: "工作区已打开，可以开始通用任务",
@@ -4199,9 +4656,26 @@
         busy: "万能智能体正在处理当前请求",
         welcome:
           "你好，我是万能智能体。你可以把工作、学习、写作、代码或信息整理任务交给我，我会尽量给出清晰、可执行的协助。"
+      },
+      assistant: {
+        label: "得力助手",
+        projectLabel: "项目",
+        projectBadge: "IM 项目",
+        createTitle: "新建工作区",
+        createHint: "默认保存在通用工作区目录下；目录不存在会自动创建。",
+        createEmptyHint: "新工作区不能保存到非空文件夹；保存目录不能包含 Windows 非法字符。",
+        sessionFallback: "得力助手对话",
+        projectReady: "已打开项目，可以开始处理个人助理任务",
+        projectMissing: "尚未打开项目",
+        placeholder: "描述要交给得力助手处理的记录、计划、资料或自动化任务",
+        busy: "得力助手正在处理当前请求",
+        welcome:
+          "你好，我是得力助手。你可以把记录、计划、资料整理和自动化任务交给我；绑定 QQ Bot 后，也可以从外部聊天入口访问我。"
       }
     };
     let selectedPermissionPolicy = "once";
+    let fileCodeEditor = null;
+    let syncingFileEditor = false;
 
     // --- Daemon HTTP client ------------------------------------------------
     // The frontend talks to the local daemon directly via fetch. getApi()
@@ -4212,6 +4686,7 @@
     // clientId are auto-injected from window state so call sites need no edit.
     const DAEMON_CLIENT_ID = "c-" + Math.random().toString(36).slice(2, 10);
     let DAEMON_BASE_URL = "";
+    let DAEMON_TOKEN = "";
 
     // methodName -> { p: endpoint path, a: [positional arg keys] }
     // Endpoints marked with "+project"/"+thread"/"+client" auto-inject those.
@@ -4228,8 +4703,10 @@
       open_project:        { p: "/projects/open", a: ["projectId"] },
       create_project:      { p: "/projects/create-map", a: ["name", "projectPath"] },
       create_workspace_project: { p: "/projects/create-workspace", a: ["name", "projectPath"] },
+      create_assistant_project: { p: "/projects/create-assistant", a: ["name", "projectPath"] },
       open_map_project_file: { p: "/projects/open-map-from-path", a: ["path"] },
       open_workspace_project_directory: { p: "/projects/open-workspace-from-path", a: ["path"] },
+      open_assistant_project_directory: { p: "/projects/open-assistant-from-path", a: ["path"] },
       remove_recent_project: { p: "/projects/remove-recent", a: ["projectId"], inject: ["currentProject"] },
       // history
       get_history:         { p: "/history/list",  a: [], inject: ["project"] },
@@ -4254,6 +4731,11 @@
       delete_model:        { p: "/settings/model/delete", a: ["providerName", "modelName"] },
       set_active_model:    { p: "/settings/model/set-active", a: ["providerName", "modelName"] },
       save_observability:  { p: "/settings/observability/save", a: ["observability"] },
+      save_assistant_settings: { p: "/settings/assistant/save", a: ["assistant"] },
+      save_soul_preset: { p: "/settings/soul-preset/save", a: ["soulPreset", "originalId"] },
+      delete_soul_preset: { p: "/settings/soul-preset/delete", a: ["presetId"] },
+      get_workspace_settings: { p: "/settings/workspace/get", a: ["projectId"] },
+      save_workspace_settings: { p: "/settings/workspace/save", a: ["projectId", "workspaceConfig"] },
       // usage
       get_usage_summary:   { p: "/usage/summary", a: ["days"] },
       get_conversation_usage: { p: "/usage/conversation", a: ["conversationId"] },
@@ -4263,6 +4745,7 @@
       close_window:        { local: true },
       resize_window_by:    { local: true },
       open_new_window:     { local: true },
+      set_window_title:    { local: true },
     };
 
     function currentProjectBody() {
@@ -4287,6 +4770,33 @@
       return window.pywebview && window.pywebview.api ? window.pywebview.api : null;
     }
 
+    function daemonHeaders() {
+      const headers = { "Content-Type": "application/json" };
+      if (DAEMON_TOKEN) headers["X-Ra3Copilot-Token"] = DAEMON_TOKEN;
+      return headers;
+    }
+
+    function handleDaemonLost(reason) {
+      if (!daemonWasReady || daemonClosing) return;
+      daemonClosing = true;
+      if (daemonHealthTimer) {
+        window.clearInterval(daemonHealthTimer);
+        daemonHealthTimer = null;
+      }
+      DAEMON_BASE_URL = "";
+      DAEMON_TOKEN = "";
+      state.busy = false;
+      setBusy(false);
+      sendBtn.disabled = true;
+      runStatusLabel.textContent = "守护进程已退出";
+      const bridge = localBridge();
+      if (bridge && typeof bridge.close_window === "function") {
+        Promise.resolve(bridge.close_window()).catch(() => window.close());
+      } else {
+        window.close();
+      }
+    }
+
     function getApi() {
       return new Proxy({}, {
         get(_target, method) {
@@ -4309,10 +4819,14 @@
               }
               return bridge.choose_directory(args[0]);
             }
-            // open_map_project_file() / open_workspace_project_directory() with no
-            // arg keep the old "pick then open" behaviour: trigger the native
+            // open_*_project_directory() with no arg keeps the old
+            // "pick then open" behaviour: trigger the native
             // picker here, then forward the chosen path to the daemon.
-            if (method === "open_map_project_file" || method === "open_workspace_project_directory") {
+            if (
+              method === "open_map_project_file" ||
+              method === "open_workspace_project_directory" ||
+              method === "open_assistant_project_directory"
+            ) {
               let chosen = args[0];
               if (!chosen) {
                 const bridge = localBridge();
@@ -4329,11 +4843,12 @@
               try {
                 const res = await fetch(DAEMON_BASE_URL + route.p, {
                   method: "POST",
-                  headers: { "Content-Type": "application/json" },
+                  headers: daemonHeaders(),
                   body: JSON.stringify({ path: chosen })
                 });
                 return await res.json();
               } catch (err) {
+                handleDaemonLost(err);
                 return { ok: false, error: "守护进程请求失败：" + (err && err.message ? err.message : err) };
               }
             }
@@ -4370,11 +4885,12 @@
             try {
               const res = await fetch(DAEMON_BASE_URL + route.p, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: daemonHeaders(),
                 body: JSON.stringify(body)
               });
               return await res.json();
             } catch (err) {
+              handleDaemonLost(err);
               return { ok: false, error: "守护进程请求失败：" + (err && err.message ? err.message : err) };
             }
           };
@@ -4383,7 +4899,8 @@
     }
 
     function normalizeAgentMode(mode) {
-      return mode === "universal" ? "universal" : "ra3";
+      if (mode === "openclaw") return "assistant";
+      return Object.prototype.hasOwnProperty.call(AGENT_META, mode) ? mode : "ra3";
     }
 
     function currentAgentMeta() {
@@ -4485,14 +5002,14 @@
 
     function normalizeCodeHighlightTheme(theme) {
       const value = String(theme || "").trim().toLowerCase();
-      return CODE_HIGHLIGHT_THEMES.some((item) => item.id === value) ? value : CODE_HIGHLIGHT_THEMES[0].id;
+      return CODE_HIGHLIGHT_THEMES.some((item) => item.id === value) ? value : DEFAULT_CODE_HIGHLIGHT_THEME;
     }
 
     function readCodeHighlightThemePreference() {
       try {
         return normalizeCodeHighlightTheme(window.localStorage.getItem(CODE_HIGHLIGHT_THEME_KEY));
       } catch {
-        return CODE_HIGHLIGHT_THEMES[0].id;
+        return DEFAULT_CODE_HIGHLIGHT_THEME;
       }
     }
 
@@ -4924,7 +5441,8 @@
     function defaultProjectName(mode = state.agentMode) {
       const now = new Date();
       const pad = (value) => String(value).padStart(2, "0");
-      const prefix = normalizeAgentMode(mode) === "universal" ? "工作区" : "地图工程";
+      const normalizedMode = normalizeAgentMode(mode);
+      const prefix = normalizedMode === "ra3" ? "地图工程" : "工作区";
       return `${prefix} ${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}-${pad(now.getMinutes())}`;
     }
 
@@ -4938,8 +5456,13 @@
       return cleaned || defaultProjectName(mode);
     }
 
-    function projectDirectoryRoot() {
+    function projectDirectoryRoot(mode = state.agentMode) {
       const snapshot = state.projects || previewProjectsSnapshot();
+      const roots = snapshot.projectRoots || {};
+      const normalizedMode = normalizeAgentMode(mode);
+      if (normalizedMode === "ra3" && roots.ra3) return String(roots.ra3).trim();
+      if (normalizedMode === "universal" && roots.universal) return String(roots.universal).trim();
+      if (normalizedMode === "assistant" && roots.universal) return String(roots.universal).trim();
       return String(snapshot.projectsDir || "").trim();
     }
 
@@ -4950,7 +5473,7 @@
     }
 
     function suggestedProjectPath(name, mode = state.agentMode) {
-      return joinDirectory(projectDirectoryRoot(), sanitizePathSegment(name || defaultProjectName(mode), mode));
+      return joinDirectory(projectDirectoryRoot(mode), sanitizePathSegment(name || defaultProjectName(mode), mode));
     }
 
     function syncProjectPathWithName() {
@@ -4964,6 +5487,10 @@
     function previewProjectsSnapshot() {
       return {
         projectsDir: "%APPDATA%\\Ra3Copilot\\projects",
+        projectRoots: {
+          ra3: "%APPDATA%\\Ra3Copilot\\projects\\maps",
+          universal: "%APPDATA%\\Ra3Copilot\\projects\\workspaces"
+        },
         defaultProject: {
           id: "default",
           name: "默认工程",
@@ -4974,7 +5501,8 @@
           hidden: false
         },
         currentProject: null,
-        recentProjects: []
+        recentProjects: [],
+        imBoundProjects: []
       };
     }
 
@@ -4985,19 +5513,71 @@
       return "地图工程";
     }
 
+    function projectKindLabel(kind) {
+      return projectBadgeText({ kind });
+    }
+
+    function windowTitleParts(context = state.context) {
+      const project = context?.project || null;
+      const projectName = String(project?.name || "").trim();
+      if (projectName) {
+        const kindLabel = projectKindLabel(project.kind);
+        return {
+          title: projectName,
+          subtitle: `Ra3Copilot · ${kindLabel}`,
+          nativeTitle: `${projectName} - Ra3Copilot`
+        };
+      }
+      return {
+        title: "Ra3Copilot",
+        subtitle: "工作台",
+        nativeTitle: "Ra3Copilot 工作台"
+      };
+    }
+
+    function updateWindowTitle(context = state.context) {
+      const parts = windowTitleParts(context);
+      if (windowTitleText) windowTitleText.textContent = parts.title;
+      if (windowSubtitleText) windowSubtitleText.textContent = parts.subtitle;
+      document.title = parts.nativeTitle;
+
+      const bridge = localBridge();
+      if (bridge && typeof bridge.set_window_title === "function") {
+        Promise.resolve(bridge.set_window_title(parts.nativeTitle)).catch(() => {});
+      }
+    }
+
+    function imIntegrationBadgeText(project) {
+      const integrations = Array.isArray(project?.imIntegrations) ? project.imIntegrations : [];
+      if (!integrations.length) return projectBadgeText(project);
+      return integrations.map((item) => {
+        const count = Number(item.count || 0);
+        return `${item.label || item.type || "IM"}${count > 1 ? ` ×${count}` : ""}`;
+      }).join(" · ");
+    }
+
     function recentProjectsForMode(mode, projects) {
       const normalizedMode = normalizeAgentMode(mode);
       const items = Array.isArray(projects) ? projects : [];
       if (normalizedMode === "ra3") {
         return items.filter((project) => String(project?.kind || "map").toLowerCase() === "map");
       }
-      return items;
+      if (normalizedMode === "assistant") {
+        const snapshot = state.projects || previewProjectsSnapshot();
+        return Array.isArray(snapshot.imBoundProjects) ? snapshot.imBoundProjects : [];
+      }
+      return items.filter((project) => String(project?.kind || "").toLowerCase() === "workspace");
     }
 
     function recentEmptyText(mode) {
-      return normalizeAgentMode(mode) === "ra3"
-        ? "还没有最近打开的地图工程。可以直接进入默认工程，或创建一个新工程。"
-        : "还没有最近打开的工作区。可以直接进入默认工作区，或创建一个新工作区。";
+      const normalizedMode = normalizeAgentMode(mode);
+      if (normalizedMode === "ra3") {
+        return "还没有最近打开的地图工程。可以直接进入默认工程，或创建一个新工程。";
+      }
+      if (normalizedMode === "assistant") {
+        return "还没有项目接入 IM。先打开任意项目，然后在设置里的“当前工作区 / IM 接入”添加 QQ Bot 绑定。";
+      }
+      return "还没有最近打开的工作区。可以直接进入默认工作区，或创建一个新工作区。";
     }
 
     function renderRecentProjectsFor(mode, container) {
@@ -5016,7 +5596,7 @@
               <strong>${escapeHtml(project.name || project.id)}</strong>
               <span>上次打开：${escapeHtml(formatProjectTime(project.last_opened_at))}</span>
             </span>
-            <span class="settings-badge">${escapeHtml(projectBadgeText(project))}</span>
+            <span class="settings-badge">${escapeHtml(normalizeAgentMode(mode) === "assistant" ? imIntegrationBadgeText(project) : projectBadgeText(project))}</span>
           </button>
           <span class="recent-actions">
             <button class="ghost-btn" type="button" data-open-project="${escapeHtml(project.id)}">打开</button>
@@ -5033,10 +5613,53 @@
       });
     }
 
+    function agentModeForProject(project) {
+      const kind = String(project?.kind || "").toLowerCase();
+      if (kind === "workspace") return "universal";
+      return "ra3";
+    }
+
+    function renderHomeRecentProjects() {
+      if (!homeRecentProjectsList) return;
+      const snapshot = state.projects || previewProjectsSnapshot();
+      const projects = Array.isArray(snapshot.recentProjects)
+        ? snapshot.recentProjects.slice(0, 5)
+        : [];
+      if (!projects.length) {
+        homeRecentProjectsList.innerHTML = `<div class="recent-empty">还没有最近项目。可以先打开文件夹、打开 RA3 地图或进入功能场景。</div>`;
+        return;
+      }
+
+      homeRecentProjectsList.innerHTML = projects.map((project) => `
+        <div class="recent-project">
+          <button class="provider-main" type="button" data-open-project="${escapeHtml(project.id)}" data-agent-mode="${escapeHtml(agentModeForProject(project))}">
+            <span class="recent-project-main">
+              <strong>${escapeHtml(project.name || project.id)}</strong>
+              <span>上次打开：${escapeHtml(formatProjectTime(project.last_opened_at))}</span>
+            </span>
+            <span class="settings-badge">${escapeHtml(projectBadgeText(project))}</span>
+          </button>
+          <span class="recent-actions">
+            <button class="ghost-btn" type="button" data-open-project="${escapeHtml(project.id)}" data-agent-mode="${escapeHtml(agentModeForProject(project))}">打开</button>
+            <button class="danger-btn" type="button" data-remove-project="${escapeHtml(project.id)}">移除</button>
+          </span>
+        </div>
+      `).join("");
+
+      homeRecentProjectsList.querySelectorAll("[data-open-project]").forEach((button) => {
+        button.addEventListener("click", () => openProjectAndChat(button.dataset.openProject, button.dataset.agentMode));
+      });
+      homeRecentProjectsList.querySelectorAll("[data-remove-project]").forEach((button) => {
+        button.addEventListener("click", () => removeProjectFromRecent(button.dataset.removeProject));
+      });
+    }
+
     function renderRecentProjects() {
       if (projectsDirLabel) projectsDirLabel.textContent = "";
+      renderHomeRecentProjects();
       renderRecentProjectsFor("ra3", recentProjectsList);
       renderRecentProjectsFor("universal", universalRecentProjectsList);
+      renderRecentProjectsFor("assistant", assistantRecentProjectsList);
     }
 
     function applyProjectsSnapshot(snapshot) {
@@ -5210,6 +5833,38 @@
         text: "text"
       };
       return aliases[value] || "text";
+    }
+
+    function codeMirrorModeForLanguage(language) {
+      switch (normalizeCodeLanguage(language)) {
+        case "json":
+          return { name: "javascript", json: true };
+        case "javascript":
+          return "javascript";
+        case "typescript":
+          return { name: "javascript", typescript: true };
+        case "xml":
+          return "htmlmixed";
+        case "markdown":
+          return "markdown";
+        case "c":
+          return "text/x-csrc";
+        case "cpp":
+          return "text/x-c++src";
+        case "csharp":
+          return "text/x-csharp";
+        case "python":
+          return "python";
+        case "powershell":
+          return "powershell";
+        case "css":
+          return "css";
+        case "ini":
+        case "yaml":
+        case "text":
+        default:
+          return "text/plain";
+      }
     }
 
     function escapeAttribute(value) {
@@ -5706,17 +6361,83 @@
       return state.fileViewMode === "edit" ? fileEditor : filePreviewScrollElement();
     }
 
+    function ensureFileCodeEditor() {
+      if (fileCodeEditor || !window.CodeMirror) return fileCodeEditor;
+      fileCodeEditor = window.CodeMirror.fromTextArea(fileEditor, {
+        autofocus: false,
+        indentUnit: 2,
+        lineNumbers: false,
+        lineWrapping: false,
+        mode: codeMirrorModeForLanguage(codeLanguageForPath(state.selectedFilePath)),
+        readOnly: fileEditor.readOnly,
+        tabSize: 2,
+        theme: "ra3-github"
+      });
+      fileCodeEditor.on("change", (editor) => {
+        if (syncingFileEditor) return;
+        fileEditor.value = editor.getValue();
+        updateFileDirty(true);
+        updateCodePreview();
+      });
+      fileCodeEditor.on("scroll", (editor) => {
+        const info = editor.getScrollInfo();
+        state.fileScrollTop = info.top || 0;
+        state.fileScrollLeft = info.left || 0;
+      });
+      return fileCodeEditor;
+    }
+
+    function getFileEditorValue() {
+      return fileCodeEditor ? fileCodeEditor.getValue() : (fileEditor.value || "");
+    }
+
+    function setFileEditorValue(value) {
+      const text = String(value ?? "");
+      fileEditor.value = text;
+      if (!fileCodeEditor) return;
+      syncingFileEditor = true;
+      try {
+        if (fileCodeEditor.getValue() !== text) fileCodeEditor.setValue(text);
+      } finally {
+        syncingFileEditor = false;
+      }
+    }
+
+    function setFileEditorReadOnly(readOnly) {
+      fileEditor.readOnly = Boolean(readOnly);
+      if (fileCodeEditor) fileCodeEditor.setOption("readOnly", fileEditor.readOnly);
+    }
+
+    function setFileEditorLanguage(language) {
+      if (fileCodeEditor) fileCodeEditor.setOption("mode", codeMirrorModeForLanguage(language));
+    }
+
+    function refreshFileCodeEditor() {
+      if (!fileCodeEditor) return;
+      fileCodeEditor.refresh();
+      setFileEditorLanguage(codeLanguageForPath(state.selectedFilePath));
+    }
+
     function rememberFileScroll(element = activeFileScrollElement()) {
       if (!element) return;
+      if (element === fileEditor && fileCodeEditor) {
+        const info = fileCodeEditor.getScrollInfo();
+        state.fileScrollTop = info.top || 0;
+        state.fileScrollLeft = info.left || 0;
+        return;
+      }
       state.fileScrollTop = element.scrollTop || 0;
       state.fileScrollLeft = element.scrollLeft || 0;
     }
 
     function restoreFileScroll(element = activeFileScrollElement()) {
       if (!element) return;
+      if (element === fileEditor && fileCodeEditor) {
+        fileCodeEditor.scrollTo(state.fileScrollLeft || 0, state.fileScrollTop || 0);
+        return;
+      }
       element.scrollTop = state.fileScrollTop || 0;
       element.scrollLeft = state.fileScrollLeft || 0;
-      if (element === fileEditor) syncEditorHighlightScroll();
     }
 
     function setFileViewMode(mode, options = {}) {
@@ -5733,54 +6454,49 @@
       fileEditModeBtn.classList.toggle("active", !previewActive);
       filePreviewModeBtn.setAttribute("aria-selected", String(previewActive));
       fileEditModeBtn.setAttribute("aria-selected", String(!previewActive));
+      if (!previewActive) {
+        ensureFileCodeEditor();
+        setFileEditorReadOnly(fileEditModeBtn.disabled);
+        setFileEditorLanguage(language);
+        refreshFileCodeEditor();
+      }
       restoreFileScroll();
       if (!previewActive) {
-        syncEditorHighlightScroll();
-        fileEditor.focus();
+        window.requestAnimationFrame(() => {
+          refreshFileCodeEditor();
+          restoreFileScroll(fileEditor);
+        });
+        if (fileCodeEditor) fileCodeEditor.focus();
+        else fileEditor.focus();
       }
     }
 
     function updateCodePreview() {
       const language = codeLanguageForPath(state.selectedFilePath);
       const code = fileCodePreview.querySelector("code");
-      const editorCode = fileEditorHighlight.querySelector("code");
-      const value = fileEditor.value || "";
+      const value = getFileEditorValue();
       const codeClass = codeClassForLanguage(language);
       if (code) {
         code.className = codeClass;
         code.innerHTML = highlightCode(value, language);
       }
-      if (editorCode) {
-        editorCode.className = codeClass;
-        editorCode.innerHTML = highlightCode(value, language) || "\n";
-      }
       fileMarkdownPreview.innerHTML = language === "markdown" ? renderMarkdownSafe(value) : "";
       fileCodePreview.setAttribute("data-language", codeLanguageLabel(language));
-      fileEditorHighlight.setAttribute("data-language", codeLanguageLabel(language));
-      syncEditorHighlightScroll();
+      setFileEditorLanguage(language);
     }
 
     function clearCodePreview(message = "选择文件后显示代码预览") {
       const code = fileCodePreview.querySelector("code");
-      const editorCode = fileEditorHighlight.querySelector("code");
       if (code) {
         code.className = codeClassForLanguage("text");
         code.innerHTML = tokenSpan("tok-comment", escapeCode(message));
       }
-      if (editorCode) {
-        editorCode.className = codeClassForLanguage("text");
-        editorCode.innerHTML = tokenSpan("tok-comment", escapeCode(message));
-      }
+      setFileEditorValue("");
+      setFileEditorReadOnly(true);
       fileMarkdownPreview.innerHTML = `<p class="tok-comment">${escapeCode(message)}</p>`;
       fileCodePreview.setAttribute("data-language", "Text");
-      fileEditorHighlight.setAttribute("data-language", "Text");
       fileEditModeBtn.disabled = true;
       setFileViewMode("preview");
-    }
-
-    function syncEditorHighlightScroll() {
-      fileEditorHighlight.scrollTop = fileEditor.scrollTop;
-      fileEditorHighlight.scrollLeft = fileEditor.scrollLeft;
     }
 
     function updateFileDirty(dirty) {
@@ -5807,8 +6523,8 @@
         <span>${escapeHtml(codeLanguageLabel(language))}</span>
         <span>${file.editable ? "可编辑" : "只读"}</span>
       `;
-      fileEditor.value = file.content || "";
-      fileEditor.readOnly = !file.editable;
+      setFileEditorValue(file.content || "");
+      setFileEditorReadOnly(!file.editable);
       fileEditModeBtn.disabled = !file.editable;
       state.fileScrollTop = 0;
       state.fileScrollLeft = 0;
@@ -5827,8 +6543,8 @@
         openPanelTab("file", "file:" + (path || ""), folderName, () => {
           fileEditorPath.textContent = path || "工程根目录";
           fileEditorStats.innerHTML = `<span>文件夹</span><span>可新建文件或文件夹</span>`;
-          fileEditor.value = "";
-          fileEditor.readOnly = true;
+          setFileEditorValue("");
+          setFileEditorReadOnly(true);
           state.fileScrollTop = 0;
           state.fileScrollLeft = 0;
           clearCodePreview("选择文件后显示代码预览");
@@ -5940,7 +6656,7 @@
         showToast("桌面桥尚未就绪");
         return;
       }
-      const result = await api.save_project_file(state.selectedFilePath, fileEditor.value, state.selectedFileEncoding);
+      const result = await api.save_project_file(state.selectedFilePath, getFileEditorValue(), state.selectedFileEncoding);
       if (!result.ok) {
         showToast(result.error || "保存失败");
         return;
@@ -6134,6 +6850,7 @@
       agentSelectPane.hidden = false;
       ra3WelcomePane.hidden = true;
       universalWelcomePane.hidden = true;
+      assistantWelcomePane.hidden = true;
     }
 
     function showAgentWelcome(mode) {
@@ -6141,11 +6858,13 @@
       agentSelectPane.hidden = true;
       ra3WelcomePane.hidden = state.agentMode !== "ra3";
       universalWelcomePane.hidden = state.agentMode !== "universal";
+      assistantWelcomePane.hidden = state.agentMode !== "assistant";
       renderRecentProjects();
     }
 
     function showWelcome() {
       state.activeView = "welcome";
+      workspace.classList.remove("settings-mode");
       workspace.classList.add("welcome-mode");
       welcomePane.classList.remove("view-hidden");
       chatPane.classList.add("view-hidden");
@@ -6154,10 +6873,12 @@
       openSettingsBtn.classList.remove("active");
       showAgentSelection();
       renderRecentProjects();
+      if (!state.context?.project) updateWindowTitle(null);
     }
 
     function showChat() {
       state.activeView = "chat";
+      workspace.classList.remove("settings-mode");
       workspace.classList.remove("welcome-mode");
       welcomePane.classList.add("view-hidden");
       settingsPane.classList.add("view-hidden");
@@ -6173,8 +6894,8 @@
       state.expandedFileFolders.clear();
       state.fileDirty = false;
       closeFileContextMenu();
-      fileEditor.value = "";
-      fileEditor.readOnly = true;
+      setFileEditorValue("");
+      setFileEditorReadOnly(true);
       fileEditorPath.textContent = "未选择文件";
       fileEditorStats.innerHTML = `<span>点击左侧项目文件进行预览</span>`;
       clearCodePreview("点击左侧项目文件进行预览");
@@ -6357,10 +7078,71 @@
       appendWelcome();
     }
 
+    function projectWasInitialized(result) {
+      return Boolean(result?.projectInit?.initialized && result?.context?.project?.id);
+    }
+
+    async function ensureSoulPresetsLoaded() {
+      if (state.settings?.soulPresets?.length) return;
+      await loadSettings().catch(() => {
+        applySettingsSnapshot(previewSettingsSnapshot(), { persist: false });
+      });
+    }
+
+    function showSoulInitDialog(project) {
+      return new Promise((resolve) => {
+        soulInitProjectText.textContent = `${project.name || "新项目"} 已初始化`;
+        soulInitPresetSelect.innerHTML = soulPresetOptionsHtml("", { includeNone: false, includeManual: false });
+        soulInitPresetSelect.value = soulPresets()[0]?.id || "";
+        applySoulInitBtn.disabled = !soulInitPresetSelect.value;
+        soulInitPresetSelect.onchange = () => {
+          applySoulInitBtn.disabled = !soulInitPresetSelect.value;
+        };
+        const close = (presetId) => {
+          soulInitDialog.classList.add("hidden");
+          skipSoulInitBtn.onclick = null;
+          applySoulInitBtn.onclick = null;
+          resolve(presetId);
+        };
+        skipSoulInitBtn.onclick = () => close("");
+        applySoulInitBtn.onclick = () => close(soulInitPresetSelect.value || "");
+        soulInitDialog.classList.remove("hidden");
+      });
+    }
+
+    async function applySoulPresetToProject(project, presetId) {
+      if (!project?.id || !presetId) return false;
+      const api = getApi();
+      if (!api || !api.get_workspace_settings || !api.save_workspace_settings) return false;
+      const loaded = await api.get_workspace_settings(project.id);
+      if (!loaded.ok) {
+        showToast(loaded.error || "读取工作区配置失败");
+        return false;
+      }
+      const config = loaded.workspaceConfig || defaultWorkspaceConfig();
+      config.soul_preset_id = presetId;
+      const result = await callSettingsApi("save_workspace_settings", project.id, config);
+      if (!result) return false;
+      state.workspaceConfig = result.workspaceConfig || config;
+      state.workspaceRuntime = result.workspaceRuntime || { im_integrations: { qq: [] }, qq_bots: [] };
+      return true;
+    }
+
+    async function maybeGuideSoulForInitializedProject(result) {
+      if (!projectWasInitialized(result)) return;
+      const project = result.context.project;
+      await ensureSoulPresetsLoaded();
+      const presetId = await showSoulInitDialog(project);
+      if (!presetId) return;
+      const applied = await applySoulPresetToProject(project, presetId);
+      if (applied) showToast("SOUL 已应用到当前工作区");
+    }
+
     async function openProjectAndChat(projectId = "default", agentMode = state.agentMode) {
       await syncAgentMode(agentMode);
       const result = await callProjectApi("open_project", projectId || "default");
       if (!result) return;
+      await maybeGuideSoulForInitializedProject(result);
       resetConversationView();
       showChat();
       await refreshFilesAfterProjectChange();
@@ -6377,9 +7159,12 @@
       if (projectDialogTitle) projectDialogTitle.textContent = agent.createTitle;
       projectCreateHint.textContent = agent.createHint;
       projectOperationHint.textContent = agent.createEmptyHint;
-      projectNameInput.placeholder = normalizedMode === "universal"
-        ? "例如：论文资料整理"
-        : "例如：日冕脚本修复";
+      const placeholderByMode = {
+        ra3: "例如：日冕脚本修复",
+        universal: "例如：论文资料整理",
+        assistant: "例如：得力助手资料库"
+      };
+      projectNameInput.placeholder = placeholderByMode[normalizedMode] || "例如：新项目";
       projectNameInput.value = defaultProjectName(normalizedMode);
       projectPathInput.value = suggestedProjectPath(projectNameInput.value, normalizedMode);
       projectDialog.classList.remove("hidden");
@@ -6402,11 +7187,17 @@
         return;
       }
       confirmProjectCreateBtn.disabled = true;
-      const method = agentMode === "universal" ? "create_workspace_project" : "create_project";
+      const methodByMode = {
+        ra3: "create_project",
+        universal: "create_workspace_project",
+        assistant: "create_workspace_project"
+      };
+      const method = methodByMode[agentMode] || "create_project";
       const result = await callProjectApi(method, name, directory);
       confirmProjectCreateBtn.disabled = false;
       if (!result) return;
       closeProjectDialog();
+      await maybeGuideSoulForInitializedProject(result);
       resetConversationView();
       showChat();
       await refreshFilesAfterProjectChange();
@@ -6455,6 +7246,7 @@
       if (result.projects) applyProjectsSnapshot(result.projects);
       if (result.context) applyContext(result.context, false);
       if (result.history) applyHistorySnapshot(result.history);
+      await maybeGuideSoulForInitializedProject(result);
       await loadConversationUsage(true).catch((error) => showToast(error.message || String(error)));
       resetConversationView();
       showChat();
@@ -6488,6 +7280,41 @@
       if (result.projects) applyProjectsSnapshot(result.projects);
       if (result.context) applyContext(result.context, false);
       if (result.history) applyHistorySnapshot(result.history);
+      await maybeGuideSoulForInitializedProject(result);
+      await loadConversationUsage(true).catch((error) => showToast(error.message || String(error)));
+      resetConversationView();
+      showChat();
+      await refreshFilesAfterProjectChange();
+      setBusy(false);
+      showToast(`已打开工作区：${result.context?.project?.name || "工作区"}`);
+    }
+
+    async function openAssistantProjectAndChat() {
+      await syncAgentMode("assistant");
+      const api = getApi();
+      if (!api || !api.open_workspace_project_directory) {
+        showToast("桌面桥尚未就绪");
+        return;
+      }
+      if (openAssistantProjectBtn) openAssistantProjectBtn.disabled = true;
+      let result;
+      try {
+        result = await api.open_workspace_project_directory();
+      } catch (error) {
+        if (openAssistantProjectBtn) openAssistantProjectBtn.disabled = false;
+        showToast(error?.message || "打开工作区失败");
+        return;
+      }
+      if (openAssistantProjectBtn) openAssistantProjectBtn.disabled = false;
+      if (!result.ok) {
+        showToast(result.error || "打开工作区失败");
+        return;
+      }
+      if (result.cancelled) return;
+      if (result.projects) applyProjectsSnapshot(result.projects);
+      if (result.context) applyContext(result.context, false);
+      if (result.history) applyHistorySnapshot(result.history);
+      await maybeGuideSoulForInitializedProject(result);
       await loadConversationUsage(true).catch((error) => showToast(error.message || String(error)));
       resetConversationView();
       showChat();
@@ -6575,11 +7402,44 @@
           provider_name: "DeepSeek 官方",
           name: "deepseek-chat"
         },
+        soulPresets: [
+          {
+            id: "builtin-ra3-game-expert",
+            name: "RA3游戏专家",
+            content: "你是熟悉《红色警戒3》地图、脚本、阵营机制和玩家体验的游戏开发专家。\n你会优先从可玩性、关卡节奏、触发器可靠性、地图资源与调试路径出发给建议。\n回答时保持专业、直接，必要时给出可落地的检查清单和修改步骤。",
+            builtin: true
+          },
+          {
+            id: "builtin-reliable-assistant",
+            name: "可靠助理",
+            content: "你是可靠、稳健、重视事实和执行质量的个人助理。\n你会先澄清目标和约束，再给出清晰可执行的方案。\n当信息不足时明确说明假设；当任务复杂时拆成小步推进。",
+            builtin: true
+          },
+          {
+            id: "builtin-moe-catgirl",
+            name: "萌萌猫娘",
+            content: "你是活泼、亲切、略带可爱语气的助理，但仍然以完成任务为第一优先级。\n你可以用轻松温柔的措辞回应用户，同时保持答案准确、清楚、可执行。\n涉及严肃、技术或高风险问题时收起玩笑，优先给出可靠建议。",
+            builtin: true
+          }
+        ],
         observability: {
           enabled: false,
           langsmith_endpoint: "https://apac.api.smith.langchain.com",
           langsmith_api_key: "",
           langsmith_project: "ra3-copilot"
+        },
+        assistant: {
+          qq_bot_enabled: false,
+          app_id: "",
+          app_secret: ""
+        },
+        assistantRuntime: {
+          enabled: false,
+          running: false,
+          connected: false,
+          state: "disabled",
+          message: "QQ Bot 未启用",
+          last_error: ""
         }
       };
     }
@@ -7052,6 +7912,255 @@
       };
     }
 
+    function soulPresets() {
+      const settings = state.settings || previewSettingsSnapshot();
+      return Array.isArray(settings.soulPresets) ? settings.soulPresets : [];
+    }
+
+    function getSoulPreset(id = state.selectedSoulPresetId) {
+      return soulPresets().find((preset) => preset.id === id) || null;
+    }
+
+    function renderSoulPresetSettings() {
+      const presets = soulPresets();
+      if (!state.selectedSoulPresetId || !presets.some((preset) => preset.id === state.selectedSoulPresetId)) {
+        state.selectedSoulPresetId = presets[0]?.id || "";
+        state.soulPresetEditorMode = state.selectedSoulPresetId ? "edit" : "create";
+      }
+      soulPresetList.innerHTML = presets.map((preset) => {
+        const active = preset.id === state.selectedSoulPresetId;
+        return `
+          <div class="settings-list-item provider-list-item${active ? " active" : ""}">
+            <button class="provider-main" type="button" data-soul-preset="${escapeHtml(preset.id)}">
+              <span>
+                <strong>${escapeHtml(preset.name)}</strong>
+                <span>${escapeHtml((preset.content || "").split(/\r?\n/).find(Boolean) || "空 SOUL")}</span>
+              </span>
+              <span class="settings-badge${preset.builtin ? " active" : ""}">${preset.builtin ? "内置" : "自定义"}</span>
+            </button>
+          </div>
+        `;
+      }).join("") || `<div class="recent-empty">还没有 SOUL 预设。</div>`;
+
+      soulPresetList.querySelectorAll("[data-soul-preset]").forEach((button) => {
+        button.addEventListener("click", () => selectSoulPreset(button.dataset.soulPreset));
+      });
+
+      const selected = getSoulPreset();
+      const isBuiltin = Boolean(selected?.builtin);
+      const isCreate = state.soulPresetEditorMode === "create";
+      soulPresetNameInput.value = isCreate ? "" : selected?.name || "";
+      soulPresetContentInput.value = isCreate ? "" : selected?.content || "";
+      soulPresetNameInput.disabled = isBuiltin;
+      soulPresetContentInput.disabled = isBuiltin;
+      saveSoulPresetBtn.disabled = isBuiltin;
+      deleteSoulPresetBtn.disabled = isBuiltin || isCreate || !selected;
+      saveSoulPresetBtn.textContent = isCreate ? "创建 SOUL" : "保存 SOUL";
+      soulPresetStatusText.textContent = isBuiltin
+        ? "内置 SOUL 可查看但不可修改。"
+        : (isCreate ? "正在创建自定义 SOUL。" : "自定义 SOUL 可修改或删除。");
+    }
+
+    function selectSoulPreset(id) {
+      state.selectedSoulPresetId = id || "";
+      state.soulPresetEditorMode = "edit";
+      renderSoulPresetSettings();
+    }
+
+    function beginCreateSoulPreset() {
+      state.selectedSoulPresetId = "";
+      state.soulPresetEditorMode = "create";
+      renderSoulPresetSettings();
+      window.setTimeout(() => soulPresetNameInput.focus(), 0);
+    }
+
+    function currentSoulPresetPayload() {
+      const selected = getSoulPreset();
+      return {
+        id: state.soulPresetEditorMode === "edit" ? selected?.id || "" : "",
+        name: soulPresetNameInput.value.trim(),
+        content: soulPresetContentInput.value.trim()
+      };
+    }
+
+    function soulPresetOptionsHtml(selectedId, { includeNone = false, includeManual = true } = {}) {
+      const options = [];
+      if (includeNone) {
+        options.push(`<option value="">不使用 SOUL</option>`);
+      }
+      if (includeManual && selectedId === "__manual__") {
+        options.push(`<option value="__manual__">当前 SOUL.md（手动文件）</option>`);
+      }
+      for (const preset of soulPresets()) {
+        const label = `${preset.builtin ? "内置 · " : ""}${preset.name}`;
+        options.push(`<option value="${escapeHtml(preset.id)}">${escapeHtml(label)}</option>`);
+      }
+      return options.join("");
+    }
+
+    function defaultWorkspaceConfig() {
+      return { soul_preset_id: "", im_integrations: { qq: [] } };
+    }
+
+    function workspaceConfig() {
+      return state.workspaceConfig || defaultWorkspaceConfig();
+    }
+
+    function workspaceRuntime() {
+      return state.workspaceRuntime || { im_integrations: { qq: [] }, qq_bots: [] };
+    }
+
+    function currentProject() {
+      return state.context?.project || null;
+    }
+
+    function qqBotBindingsFromConfig(config = workspaceConfig()) {
+      const integrations = config?.im_integrations || config?.imIntegrations || {};
+      const qq = Array.isArray(integrations.qq) ? integrations.qq : [];
+      if (qq.length) return qq;
+      return Array.isArray(config?.qq_bots) ? config.qq_bots : [];
+    }
+
+    function qqBotStatusesFromRuntime(runtime = workspaceRuntime()) {
+      const integrations = runtime?.im_integrations || runtime?.imIntegrations || {};
+      const qq = Array.isArray(integrations.qq) ? integrations.qq : [];
+      if (qq.length) return qq;
+      return Array.isArray(runtime?.qq_bots) ? runtime.qq_bots : [];
+    }
+
+    function makeWorkspaceBindingId() {
+      if (window.crypto && typeof window.crypto.randomUUID === "function") {
+        return window.crypto.randomUUID();
+      }
+      return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    function qqBotRuntimeById() {
+      const map = new Map();
+      for (const item of qqBotStatusesFromRuntime()) {
+        map.set(String(item.binding_id || ""), item);
+      }
+      return map;
+    }
+
+    function qqBotStatusText(status) {
+      if (!status) return "未启动";
+      if (status.connected) return "已连接";
+      if (status.running) return status.message || "正在连接";
+      if (status.last_error) return `连接失败：${status.last_error}`;
+      return status.message || "未启动";
+    }
+
+    function renderAssistantSettings() {
+      const project = currentProject();
+      const hasProject = Boolean(project?.id);
+      const projectText = hasProject
+        ? `当前工作区：${project.name || "未命名工作区"} · ${projectKindLabel(project.kind)}`
+        : "尚未打开工作区。";
+      workspaceConfigProjectText.textContent = hasProject
+        ? projectText
+        : "尚未打开工作区。";
+      qqBotWorkspaceStatusText.textContent = projectText;
+      workspaceSoulSettingsSection.hidden = false;
+      assistantQqBotSettingsSection.hidden = !hasProject;
+      workspaceConfigUnavailableSection.hidden = hasProject;
+      saveWorkspaceSoulSettingsBtn.disabled = !hasProject;
+      saveAssistantSettingsBtn.disabled = !hasProject;
+      reloadWorkspaceSettingsBtn.disabled = !hasProject;
+      reloadQqBotSettingsBtn.disabled = !hasProject;
+
+      if (!hasProject) {
+        workspaceSoulPresetSelect.innerHTML = `<option value="">不使用 SOUL</option>`;
+        workspaceSoulPresetSelect.disabled = true;
+        workspaceSoulStatusText.textContent = "打开工作区后可配置 SOUL。";
+        workspaceSoulSaveStatusText.textContent = "打开工作区后可保存 SOUL 配置。";
+        assistantBindingStatusText.textContent = "打开工作区后可配置 IM 接入。";
+        assistantQqBotBindingsList.innerHTML = "";
+        assistantQqBotEmptyRow.hidden = true;
+        return;
+      }
+
+      const config = workspaceConfig();
+      const soulPresetId = config.soul_preset_id || "";
+      workspaceSoulPresetSelect.disabled = false;
+      workspaceSoulPresetSelect.innerHTML = soulPresetOptionsHtml(soulPresetId, { includeNone: true });
+      workspaceSoulPresetSelect.value = soulPresetId;
+      if (soulPresetId === "__manual__") {
+        workspaceSoulStatusText.textContent = "当前存在手动维护的 SOUL.md；选择预设并保存后会覆盖它。";
+      } else if (soulPresetId) {
+        const preset = soulPresets().find((item) => item.id === soulPresetId);
+        workspaceSoulStatusText.textContent = preset
+          ? `当前使用：${preset.name}。保存后会同步写入 SOUL.md。`
+          : "当前 SOUL 预设不存在，请重新选择。";
+      } else {
+        workspaceSoulStatusText.textContent = "当前工作区不使用 SOUL；保存后会保持没有 SOUL.md。";
+      }
+      workspaceSoulSaveStatusText.textContent = "可保存当前工作区 SOUL 配置。";
+
+      const bots = qqBotBindingsFromConfig(config);
+      const runtimeById = qqBotRuntimeById();
+      assistantQqBotBindingsList.innerHTML = bots.map((bot, index) => {
+        const status = runtimeById.get(String(bot.id || ""));
+        return `
+          <div class="qq-bot-binding" data-index="${index}" data-binding-id="${escapeHtml(bot.id || "")}">
+            <div class="qq-bot-binding-head">
+              <div class="qq-bot-binding-title">
+                <strong>QQ Bot ${index + 1}</strong>
+                <span class="qq-bot-status">${escapeHtml(qqBotStatusText(status))}</span>
+              </div>
+              <div class="settings-actions">
+                <label class="settings-switch">
+                  <input type="checkbox" data-field="enabled" ${bot.enabled ? "checked" : ""} />
+                  <span>启用</span>
+                </label>
+                <button class="ghost-btn" type="button" data-action="remove-qq-bot">删除</button>
+              </div>
+            </div>
+            <div class="qq-bot-binding-grid">
+              <label class="settings-field">
+                <span>备注</span>
+                <input class="settings-input" type="text" data-field="remark" value="${escapeHtml(bot.remark || "")}" placeholder="例如：个人单聊 / 项目群" />
+              </label>
+              <label class="settings-field">
+                <span>AppID</span>
+                <input class="settings-input" type="text" inputmode="numeric" data-field="app_id" value="${escapeHtml(bot.app_id || "")}" placeholder="例如 1020..." />
+              </label>
+              <label class="settings-field">
+                <span>AppSecret</span>
+                <input class="settings-input" type="password" autocomplete="off" data-field="app_secret" value="${escapeHtml(bot.app_secret || "")}" placeholder="请输入 AppSecret" />
+              </label>
+            </div>
+          </div>
+        `;
+      }).join("");
+      assistantQqBotEmptyRow.hidden = bots.length > 0;
+      const connectedCount = [...runtimeById.values()].filter((item) => item.connected).length;
+      assistantBindingStatusText.textContent = bots.length
+        ? `${bots.length} 条 QQ Bot 绑定 · ${connectedCount} 条已连接`
+        : "尚未添加 QQ Bot 绑定。";
+    }
+
+    function currentWorkspacePayload() {
+      const rows = Array.from(assistantQqBotBindingsList.querySelectorAll(".qq-bot-binding"));
+      return {
+        soul_preset_id: workspaceSoulPresetSelect.disabled ? workspaceConfig().soul_preset_id || "" : workspaceSoulPresetSelect.value,
+        im_integrations: {
+          qq: rows.map((row) => ({
+            id: row.dataset.bindingId || makeWorkspaceBindingId(),
+            enabled: Boolean(row.querySelector('[data-field="enabled"]')?.checked),
+            remark: row.querySelector('[data-field="remark"]')?.value.trim() || "",
+            app_id: row.querySelector('[data-field="app_id"]')?.value.trim() || "",
+            app_secret: row.querySelector('[data-field="app_secret"]')?.value.trim() || ""
+          }))
+        }
+      };
+    }
+
+    function syncWorkspaceConfigFromForm() {
+      state.workspaceConfig = currentWorkspacePayload();
+      return state.workspaceConfig;
+    }
+
     function renderSettings() {
       renderProviderPresets();
       const providers = state.settings?.providers || [];
@@ -7065,6 +8174,8 @@
       renderFetchedModels();
       renderModelList();
       renderObservabilitySettings();
+      renderSoulPresetSettings();
+      renderAssistantSettings();
       syncRuntimeModelFromSettings();
       renderChatModelSelect();
     }
@@ -7103,6 +8214,57 @@
       if (result.settings) applySettingsSnapshot(result.settings);
       if (result.context) applyContext(result.context, false);
       return result;
+    }
+
+    function stopAssistantRuntimeWatch() {
+      if (!assistantRuntimeTimer) return;
+      window.clearInterval(assistantRuntimeTimer);
+      assistantRuntimeTimer = null;
+    }
+
+    function startAssistantRuntimeWatch() {
+      if (assistantRuntimeTimer) return;
+      assistantRuntimeTimer = window.setInterval(refreshAssistantRuntimeStatus, 5000);
+      refreshAssistantRuntimeStatus();
+    }
+
+    async function loadWorkspaceSettings() {
+      const project = currentProject();
+      if (!project?.id) {
+        state.workspaceConfig = defaultWorkspaceConfig();
+        state.workspaceRuntime = { im_integrations: { qq: [] }, qq_bots: [] };
+        renderAssistantSettings();
+        return null;
+      }
+      const api = getApi();
+      if (!api || !api.get_workspace_settings) {
+        state.workspaceConfig = defaultWorkspaceConfig();
+        state.workspaceRuntime = { im_integrations: { qq: [] }, qq_bots: [] };
+        renderAssistantSettings();
+        return null;
+      }
+      const result = await api.get_workspace_settings(project.id);
+      if (!result.ok) throw new Error(result.error || "读取工作区配置失败");
+      state.workspaceConfig = result.workspaceConfig || defaultWorkspaceConfig();
+      state.workspaceRuntime = result.workspaceRuntime || { im_integrations: { qq: [] }, qq_bots: [] };
+      renderAssistantSettings();
+      return result;
+    }
+
+    async function refreshAssistantRuntimeStatus() {
+      if (state.activeView !== "settings" || state.settingsTab !== "qqbot") {
+        stopAssistantRuntimeWatch();
+        return;
+      }
+      const project = currentProject();
+      if (!project?.id) return;
+      const api = getApi();
+      if (!api || !api.get_workspace_settings) return;
+      const result = await api.get_workspace_settings(project.id).catch(() => null);
+      if (!result?.ok) return;
+      syncWorkspaceConfigFromForm();
+      state.workspaceRuntime = result.workspaceRuntime || { im_integrations: { qq: [] }, qq_bots: [] };
+      renderAssistantSettings();
     }
 
     function previewUsageSnapshot() {
@@ -7247,6 +8409,7 @@
 
     async function openSettings(tab = "providers") {
       state.activeView = "settings";
+      workspace.classList.add("settings-mode");
       workspace.classList.remove("welcome-mode");
       welcomePane.classList.add("view-hidden");
       chatPane.classList.add("view-hidden");
@@ -7258,6 +8421,8 @@
     }
 
     function closeSettings() {
+      stopAssistantRuntimeWatch();
+      workspace.classList.remove("settings-mode");
       settingsPane.classList.add("view-hidden");
       openSettingsBtn.classList.remove("active");
       if (state.context?.project) {
@@ -7276,11 +8441,25 @@
       modelsSettingsPage.hidden = tab !== "models";
       usageSettingsPage.hidden = tab !== "usage";
       observabilitySettingsPage.hidden = tab !== "observability";
+      soulSettingsPage.hidden = tab !== "soul";
+      assistantSettingsPage.hidden = tab !== "assistant";
+      qqBotSettingsPage.hidden = tab !== "qqbot";
       interfaceSettingsPage.hidden = tab !== "interface";
       if (tab === "usage") {
         loadUsageSummary().catch((error) => showToast(error.message || String(error)));
       }
       if (tab === "interface") renderInterfaceSettings();
+      if (tab === "assistant" || tab === "qqbot") {
+        loadWorkspaceSettings().catch((error) => {
+          showToast(error.message || String(error));
+          renderAssistantSettings();
+        });
+      }
+      if (tab === "qqbot") {
+        startAssistantRuntimeWatch();
+      } else {
+        stopAssistantRuntimeWatch();
+      }
     }
 
     function currentProviderPayload() {
@@ -7436,6 +8615,7 @@
         });
       }
       renderCompanionStatus(context.ra3Companion);
+      updateWindowTitle(context);
       if (state.conversationUsageId !== (context.threadId || "")) {
         state.conversationUsage = null;
         state.conversationUsageId = "";
@@ -7751,9 +8931,9 @@
         explain: "会提示 Agent 先说明计划，本轮暂不主动调用工具。"
       };
       const commandByPolicy = {
-        once: state.agentMode === "universal"
-          ? "标准运行：使用通用智能体处理任务。"
-          : "标准运行：按需调用 RA3 Companion 工具。",
+        once: state.agentMode === "ra3"
+          ? "标准运行：按需调用 RA3 Companion 工具。"
+          : `标准运行：使用${currentAgentMeta().label}处理任务。`,
         remember: "只读优先：需要写入、复制或运行脚本前先解释。",
         explain: "先说明计划：本轮先给出人工确认项。"
       };
@@ -7772,6 +8952,7 @@
           const info = await bridge.get_daemon_info();
           if (info && info.ready && info.baseUrl) {
             DAEMON_BASE_URL = info.baseUrl;
+            DAEMON_TOKEN = info.token || "";
             return { ready: true };
           }
           if (info && info.error) {
@@ -7786,38 +8967,47 @@
     }
 
     // Background health monitor: once the daemon has been reachable, poll its
-    // /health endpoint. If it stays unreachable (the daemon exited), close the
-    // window — there is no backend to serve it. A few consecutive failures are
-    // required to avoid killing the window on a transient network blip.
-    const DAEMON_HEALTH_INTERVAL = 3000;
-    const DAEMON_HEALTH_FAIL_LIMIT = 2;
+    // /health endpoint. Localhost failures usually mean the singleton daemon
+    // has exited, so close this thin window quickly.
+    const DAEMON_HEALTH_INTERVAL = 600;
+    const DAEMON_HEALTH_TIMEOUT = 500;
+    const DAEMON_HEALTH_FAIL_LIMIT = 1;
     let daemonHealthTimer = null;
     let daemonHealthFailures = 0;
     let daemonWasReady = false;
+    let daemonClosing = false;
+    let assistantRuntimeTimer = null;
 
     function startDaemonHealthWatch() {
       if (daemonHealthTimer) return;
       daemonWasReady = true;
+      daemonClosing = false;
+      daemonHealthFailures = 0;
       daemonHealthTimer = window.setInterval(pollDaemonHealth, DAEMON_HEALTH_INTERVAL);
+      pollDaemonHealth();
     }
 
     async function pollDaemonHealth() {
-      if (!daemonWasReady || !DAEMON_BASE_URL) return;
+      if (!daemonWasReady || daemonClosing || !DAEMON_BASE_URL) return;
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), DAEMON_HEALTH_TIMEOUT);
       try {
-        const res = await fetch(DAEMON_BASE_URL + "/health", { method: "GET" });
+        const res = await fetch(DAEMON_BASE_URL + "/health", {
+          method: "GET",
+          cache: "no-store",
+          signal: controller.signal
+        });
+        window.clearTimeout(timeout);
         if (res.ok) {
           daemonHealthFailures = 0;
           return;
         }
         throw new Error("health " + res.status);
       } catch (err) {
+        window.clearTimeout(timeout);
         daemonHealthFailures += 1;
         if (daemonHealthFailures >= DAEMON_HEALTH_FAIL_LIMIT) {
-          if (daemonHealthTimer) { window.clearInterval(daemonHealthTimer); daemonHealthTimer = null; }
-          const bridge = localBridge();
-          if (bridge && typeof bridge.close_window === "function") {
-            bridge.close_window();
-          }
+          handleDaemonLost(err);
         }
       }
     }
@@ -8043,6 +9233,7 @@
     });
 
     menuOpenNewWindow.addEventListener("click", openNewWindowFromMenu);
+    openNewWindowBtn.addEventListener("click", openNewWindowFromMenu);
     menuBackWelcome.addEventListener("click", returnToWelcomeFromMenu);
     menuOpenProjectFolder.addEventListener("click", openProjectFolderFromMenu);
     menuOpenProjectTerminal.addEventListener("click", openProjectTerminalFromMenu);
@@ -8259,12 +9450,13 @@
     });
     fileEditModeBtn.addEventListener("click", () => setFileViewMode("edit"));
     fileEditor.addEventListener("input", () => {
+      if (fileCodeEditor) return;
       updateFileDirty(true);
       updateCodePreview();
     });
     fileEditor.addEventListener("scroll", () => {
+      if (fileCodeEditor) return;
       rememberFileScroll(fileEditor);
-      syncEditorHighlightScroll();
     });
     fileCodePreview.addEventListener("scroll", () => rememberFileScroll(fileCodePreview));
     fileMarkdownPreview.addEventListener("scroll", () => rememberFileScroll(fileMarkdownPreview));
@@ -8276,6 +9468,7 @@
 
     selectRa3AgentBtn.addEventListener("click", () => showAgentWelcome("ra3"));
     selectUniversalAgentBtn.addEventListener("click", () => showAgentWelcome("universal"));
+    selectAssistantBtn.addEventListener("click", () => showAgentWelcome("assistant"));
     agentBackButtons.forEach((button) => {
       button.addEventListener("click", showAgentSelection);
     });
@@ -8291,6 +9484,8 @@
     });
     createUniversalProjectBtn.addEventListener("click", () => openProjectDialog("universal"));
     openWorkspaceProjectBtn.addEventListener("click", openWorkspaceProjectAndChat);
+    createAssistantProjectBtn?.addEventListener("click", () => openProjectDialog("assistant"));
+    openAssistantProjectBtn?.addEventListener("click", openAssistantProjectAndChat);
     closeProjectDialogBtn.addEventListener("click", closeProjectDialog);
     projectDialog.addEventListener("click", (event) => {
       if (event.target === projectDialog) closeProjectDialog();
@@ -8313,6 +9508,10 @@
       }
     });
     confirmProjectCreateBtn.addEventListener("click", createProjectAndChat);
+
+    quickOpenWorkspaceBtn.addEventListener("click", openWorkspaceProjectAndChat);
+    quickCreateWorkspaceBtn.addEventListener("click", () => openProjectDialog("universal"));
+    quickOpenMapProjectBtn.addEventListener("click", openMapProjectAndChat);
 
     openSettingsBtn.addEventListener("click", () => {
       openSettings("providers");
@@ -8448,6 +9647,103 @@
       setCodeHighlightTheme(codeHighlightThemeSelect.value);
     });
 
+    newSoulPresetBtn.addEventListener("click", beginCreateSoulPreset);
+
+    saveSoulPresetBtn.addEventListener("click", async () => {
+      const payload = currentSoulPresetPayload();
+      if (!payload.name) {
+        showToast("SOUL 名称不能为空");
+        soulPresetNameInput.focus();
+        return;
+      }
+      const originalId = state.soulPresetEditorMode === "edit" ? getSoulPreset()?.id || "" : "";
+      const result = await callSettingsApi("save_soul_preset", payload, originalId);
+      if (!result) return;
+      state.soulPresetEditorMode = "edit";
+      state.selectedSoulPresetId = result.soulPreset?.id || originalId || "";
+      renderSettings();
+      showToast("SOUL 预设已保存");
+    });
+
+    deleteSoulPresetBtn.addEventListener("click", async () => {
+      const preset = getSoulPreset();
+      if (!preset || preset.builtin) return;
+      const confirmed = window.confirm(`删除 SOUL 预设“${preset.name}”？`);
+      if (!confirmed) return;
+      const result = await callSettingsApi("delete_soul_preset", preset.id);
+      if (!result) return;
+      state.selectedSoulPresetId = "";
+      renderSettings();
+      showToast("SOUL 预设已删除");
+    });
+
+    workspaceSoulPresetSelect.addEventListener("change", () => {
+      syncWorkspaceConfigFromForm();
+      renderAssistantSettings();
+    });
+
+    addAssistantQqBotBindingBtn.addEventListener("click", () => {
+      const nextConfig = syncWorkspaceConfigFromForm();
+      nextConfig.im_integrations = nextConfig.im_integrations || {};
+      nextConfig.im_integrations.qq = Array.isArray(nextConfig.im_integrations.qq)
+        ? nextConfig.im_integrations.qq
+        : [];
+      nextConfig.im_integrations.qq.push({
+        id: makeWorkspaceBindingId(),
+        enabled: false,
+        remark: "",
+        app_id: "",
+        app_secret: ""
+      });
+      state.workspaceConfig = nextConfig;
+      renderAssistantSettings();
+    });
+
+    async function reloadWorkspaceSettingsFromButton(button) {
+      button.disabled = true;
+      try {
+        await loadWorkspaceSettings();
+        showToast("工作区配置已刷新");
+      } catch (error) {
+        showToast(error.message || String(error));
+      } finally {
+        renderAssistantSettings();
+      }
+    }
+
+    reloadWorkspaceSettingsBtn.addEventListener("click", () => {
+      reloadWorkspaceSettingsFromButton(reloadWorkspaceSettingsBtn);
+    });
+
+    reloadQqBotSettingsBtn.addEventListener("click", () => {
+      reloadWorkspaceSettingsFromButton(reloadQqBotSettingsBtn);
+    });
+
+    assistantQqBotBindingsList.addEventListener("input", () => {
+      syncWorkspaceConfigFromForm();
+    });
+
+    assistantQqBotBindingsList.addEventListener("change", () => {
+      syncWorkspaceConfigFromForm();
+    });
+
+    assistantQqBotBindingsList.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-action]");
+      if (!button || button.dataset.action !== "remove-qq-bot") return;
+      const row = button.closest(".qq-bot-binding");
+      const index = Number(row?.dataset.index ?? -1);
+      const nextConfig = syncWorkspaceConfigFromForm();
+      nextConfig.im_integrations = nextConfig.im_integrations || {};
+      nextConfig.im_integrations.qq = Array.isArray(nextConfig.im_integrations.qq)
+        ? nextConfig.im_integrations.qq
+        : [];
+      if (index >= 0) {
+        nextConfig.im_integrations.qq.splice(index, 1);
+        state.workspaceConfig = nextConfig;
+        renderAssistantSettings();
+      }
+    });
+
     saveObservabilityBtn.addEventListener("click", async () => {
       const payload = currentObservabilityPayload();
       if (payload.enabled && !payload.langsmith_api_key) {
@@ -8465,6 +9761,64 @@
       }
       renderObservabilitySettings();
       showToast(payload.enabled ? "观测已开启，下一轮对话生效" : "观测已关闭");
+    });
+
+    async function saveWorkspaceSettingsFromForm({ validateQqBot, button, statusElement, successMessage }) {
+      const project = currentProject();
+      if (!project?.id) {
+        showToast("请先打开工作区");
+        return;
+      }
+      const payload = currentWorkspacePayload();
+      if (validateQqBot) {
+        for (const row of Array.from(assistantQqBotBindingsList.querySelectorAll(".qq-bot-binding"))) {
+          const enabledInput = row.querySelector('[data-field="enabled"]');
+          if (!enabledInput?.checked) continue;
+          const appIdInput = row.querySelector('[data-field="app_id"]');
+          const appSecretInput = row.querySelector('[data-field="app_secret"]');
+          if (!appIdInput?.value.trim()) {
+            showToast("启用 QQ Bot 需要填写 AppID");
+            appIdInput?.focus();
+            return;
+          }
+          if (!appSecretInput?.value.trim()) {
+            showToast("启用 QQ Bot 需要填写 AppSecret");
+            appSecretInput?.focus();
+            return;
+          }
+        }
+      }
+      button.disabled = true;
+      statusElement.textContent = "正在保存工作区配置...";
+      const result = await callSettingsApi("save_workspace_settings", project.id, payload);
+      button.disabled = false;
+      if (!result) {
+        statusElement.textContent = "保存失败，请检查配置。";
+        return;
+      }
+      state.workspaceConfig = result.workspaceConfig || payload;
+      state.workspaceRuntime = result.workspaceRuntime || { im_integrations: { qq: [] }, qq_bots: [] };
+      renderAssistantSettings();
+      await loadProjects().catch(() => {});
+      showToast(successMessage);
+    }
+
+    saveWorkspaceSoulSettingsBtn.addEventListener("click", () => {
+      saveWorkspaceSettingsFromForm({
+        validateQqBot: false,
+        button: saveWorkspaceSoulSettingsBtn,
+        statusElement: workspaceSoulSaveStatusText,
+        successMessage: "SOUL 已保存"
+      });
+    });
+
+    saveAssistantSettingsBtn.addEventListener("click", () => {
+      saveWorkspaceSettingsFromForm({
+        validateQqBot: true,
+        button: saveAssistantSettingsBtn,
+        statusElement: assistantBindingStatusText,
+        successMessage: "QQ Bot 绑定已保存"
+      });
     });
 
     newModelBtn.addEventListener("click", beginCreateModel);

@@ -46,7 +46,9 @@ LOCAL_SKILL_SUMMARY = """当前内置的 agent skill：
 # ---------------------------------------------------------------------------
 
 def normalize_agent_mode(mode: str | None) -> str:
-    return "universal" if mode == "universal" else "ra3"
+    if mode == "openclaw":
+        return "assistant"
+    return mode if mode in {"ra3", "universal", "assistant"} else "ra3"
 
 
 def message_text(message) -> str:
@@ -185,12 +187,17 @@ async def ensure_agent(state) -> object:
     if cached is not None:
         return cached
 
-    label = "万能 Agent" if agent_mode == "universal" else "RA3 Agent"
+    label_by_mode = {
+        "ra3": "RA3 Agent",
+        "universal": "万能 Agent",
+        "assistant": "得力助手 Agent",
+    }
+    label = label_by_mode.get(agent_mode, "Agent")
     state.emit({"type": "status", "text": f"正在初始化 {label}..."})
     with _agent_lock:
         needs_init = cache_key not in _agents
     if needs_init:
-        if agent_mode == "universal":
+        if agent_mode in {"universal", "assistant"}:
             agent = await create_universal_agent(project_path)
         else:
             agent = await create_ra3_csharp_writer_agent(project_path)

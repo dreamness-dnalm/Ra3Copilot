@@ -1575,6 +1575,7 @@ dependencies = [
     { name = "pywebview" },
     { name = "textual" },
     { name = "uvicorn" },
+    { name = "websockets" },
 ]
 
 [package.optional-dependencies]
@@ -1597,6 +1598,7 @@ requires-dist = [
     { name = "pywebview", specifier = ">=5.4" },
     { name = "textual", specifier = ">=8.2.7" },
     { name = "uvicorn", specifier = ">=0.30.0" },
+    { name = "websockets", specifier = ">=15.0.1" },
 ]
 provides-extras = ["build"]
 

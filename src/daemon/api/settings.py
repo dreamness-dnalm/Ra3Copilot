@@ -9,7 +9,23 @@ from __future__ import annotations
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from core.user_data.config import get_observability_config, set_observability_config
+from core.user_data.config import (
+    delete_soul_preset,
+    get_assistant_config,
+    get_observability_config,
+    get_soul_presets,
+    save_soul_preset,
+    set_assistant_config,
+    set_observability_config,
+)
+from core.user_data.projects import DEFAULT_PROJECT_ID, open_project
+from core.user_data.workspace_config import (
+    apply_workspace_soul,
+    get_workspace_config,
+    normalize_workspace_config,
+    set_workspace_config,
+    workspace_soul_requested,
+)
 from core.user_data.provider import (
     ModelConfig,
     ModelInfo,
@@ -26,7 +42,8 @@ from core.user_data.provider import (
     update_provider_config,
     upsert_model_config,
 )
-from daemon.api.protocol import ok
+from daemon.api.protocol import fail, ok
+from daemon.qq_bot import qq_bot_service
 from daemon.runtime import reset_agents
 
 router = APIRouter()
@@ -35,6 +52,9 @@ router = APIRouter()
 def _settings_with_observability() -> dict:
     settings = settings_snapshot()
     settings["observability"] = get_observability_config()
+    settings["assistant"] = get_assistant_config()
+    settings["assistantRuntime"] = qq_bot_service.status()
+    settings["soulPresets"] = get_soul_presets()
     return settings
 
 
@@ -183,3 +203,83 @@ def save_observability(body: ObservabilityBody):
     set_observability_config(body.observability or {})
     reset_agents()
     return ok(settings=_settings_with_observability())
+
+
+# --- assistant ---------------------------------------------------------
+
+class AssistantBody(BaseModel):
+    assistant: dict
+
+
+@router.post("/settings/assistant/save")
+def save_assistant(body: AssistantBody):
+    assistant = set_assistant_config(body.assistant or {})
+    return ok(settings=_settings_with_observability())
+
+
+# --- SOUL presets ------------------------------------------------------
+
+class SoulPresetBody(BaseModel):
+    soulPreset: dict
+    originalId: str | None = None
+
+
+class SoulPresetDeleteBody(BaseModel):
+    presetId: str
+
+
+@router.post("/settings/soul-preset/save")
+def save_soul_preset_route(body: SoulPresetBody):
+    try:
+        preset = save_soul_preset(body.soulPreset or {}, body.originalId)
+    except ValueError as exc:
+        return fail(str(exc))
+    reset_agents()
+    return ok(settings=_settings_with_observability(), soulPreset=preset)
+
+
+@router.post("/settings/soul-preset/delete")
+def delete_soul_preset_route(body: SoulPresetDeleteBody):
+    try:
+        delete_soul_preset(body.presetId)
+    except ValueError as exc:
+        return fail(str(exc))
+    reset_agents()
+    return ok(settings=_settings_with_observability())
+
+
+# --- workspace ---------------------------------------------------------
+
+class WorkspaceSettingsBody(BaseModel):
+    projectId: str = DEFAULT_PROJECT_ID
+    workspaceConfig: dict | None = None
+
+
+@router.post("/settings/workspace/get")
+def get_workspace_settings(body: WorkspaceSettingsBody):
+    project = open_project(body.projectId or DEFAULT_PROJECT_ID)
+    config = get_workspace_config(project)
+    return ok(
+        workspaceConfig=config,
+        workspaceRuntime=qq_bot_service.status_for_project(project, config),
+    )
+
+
+@router.post("/settings/workspace/save")
+def save_workspace_settings(body: WorkspaceSettingsBody):
+    project = open_project(body.projectId or DEFAULT_PROJECT_ID)
+    raw_config = body.workspaceConfig or {}
+    config = normalize_workspace_config(raw_config)
+    if workspace_soul_requested(raw_config):
+        try:
+            apply_workspace_soul(project, config)
+        except ValueError as exc:
+            return fail(str(exc))
+        reset_agents()
+    config = set_workspace_config(project, config)
+    qq_bot_service.configure_project(project, config)
+    return ok(
+        settings=_settings_with_observability(),
+        workspaceConfig=config,
+        workspaceRuntime=qq_bot_service.status_for_project(project, config),
+    )

@@ -14,9 +14,12 @@ from core.user_data.history import list_conversations
 from core.user_data.projects import (
     DEFAULT_PROJECT_ID,
     ProjectEntry,
+    create_assistant_project_at,
     create_map_project_at,
     create_workspace_project_at,
+    has_project_metadata,
     list_projects,
+    open_assistant_project_from_directory,
     open_map_project_from_directory,
     open_map_project_from_file,
     open_project,
@@ -32,12 +35,16 @@ def _entry(project: ProjectEntry) -> dict:
     return project.model_dump()
 
 
-def _full_snapshot(project: ProjectEntry | None = None) -> dict:
+def _full_snapshot(project: ProjectEntry | None = None, *, initialized: bool = False) -> dict:
     return {
         "ok": True,
         "projects": list_projects(project),
         "context": {"project": _entry(project) if project else None},
         "history": list_conversations(project) if project else [],
+        "projectInit": {
+            "initialized": bool(initialized),
+            "projectId": project.id if project else "",
+        },
     }
 
 
@@ -66,13 +73,20 @@ class CreateProjectBody(BaseModel):
 @router.post("/projects/create-map")
 def create_map(body: CreateProjectBody):
     project = create_map_project_at(name=body.name, project_path=body.projectPath)
-    return _full_snapshot(project)
+    return _full_snapshot(project, initialized=True)
 
 
 @router.post("/projects/create-workspace")
 def create_workspace(body: CreateProjectBody):
     project = create_workspace_project_at(name=body.name, project_path=body.projectPath)
-    return _full_snapshot(project)
+    return _full_snapshot(project, initialized=True)
+
+
+@router.post("/projects/create-openclaw")
+@router.post("/projects/create-assistant")
+def create_assistant(body: CreateProjectBody):
+    project = create_assistant_project_at(name=body.name, project_path=body.projectPath)
+    return _full_snapshot(project, initialized=True)
 
 
 class OpenFromPathBody(BaseModel):
@@ -85,17 +99,28 @@ def open_map_from_path(body: OpenFromPathBody):
     from pathlib import Path
 
     resolved = Path(str(body.path)).expanduser().resolve(strict=False)
+    project_dir = resolved if resolved.is_dir() else resolved.parent
+    initialized = not has_project_metadata(project_dir)
     if resolved.is_dir():
         project = open_map_project_from_directory(str(resolved))
     else:
         project = open_map_project_from_file(str(resolved))
-    return _full_snapshot(project)
+    return _full_snapshot(project, initialized=initialized)
 
 
 @router.post("/projects/open-workspace-from-path")
 def open_workspace_from_path(body: OpenFromPathBody):
+    initialized = not has_project_metadata(body.path)
     project = open_workspace_project_from_directory(body.path)
-    return _full_snapshot(project)
+    return _full_snapshot(project, initialized=initialized)
+
+
+@router.post("/projects/open-openclaw-from-path")
+@router.post("/projects/open-assistant-from-path")
+def open_assistant_from_path(body: OpenFromPathBody):
+    initialized = not has_project_metadata(body.path)
+    project = open_assistant_project_from_directory(body.path)
+    return _full_snapshot(project, initialized=initialized)
 
 
 class RemoveProjectBody(BaseModel):
