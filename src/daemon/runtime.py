@@ -51,6 +51,10 @@ def normalize_agent_mode(mode: str | None) -> str:
     return mode if mode in {"ra3", "universal", "assistant"} else "ra3"
 
 
+def normalize_permission_policy(policy: str | None) -> str:
+    return policy if policy in {"once", "remember", "explain", "plan"} else "once"
+
+
 def message_text(message) -> str:
     """Return text from LangChain message chunks across package versions."""
     text = message.text
@@ -138,16 +142,29 @@ def local_reply_for_prompt(prompt: str) -> str | None:
 
 
 def prompt_for_policy(prompt: str, policy: str) -> str:
-    if policy == "remember":
+    normalized_policy = normalize_permission_policy(policy)
+    if normalized_policy == "remember":
         return (
             "本轮请优先使用只读方式分析。涉及写入文件、复制地图、运行会修改状态的脚本、"
             "或其他不可逆操作前，先向用户解释计划并等待确认。\n\n用户请求："
             f"{prompt}"
         )
-    if policy == "explain":
+    if normalized_policy == "explain":
         return (
             "本轮先不要调用工具。请先说明你的检查/修改计划、需要用户核对的信息，"
             "以及下一步会调用哪些工具。\n\n用户请求："
+            f"{prompt}"
+        )
+    if normalized_policy == "plan":
+        return (
+            "本轮处于计划模式。你的目标是为用户创建一个可执行计划，而不是直接执行修改。\n"
+            "要求：\n"
+            "1. 必须优先调用 write_todos，创建结构化 todo 计划；每项使用 pending、in_progress 或 completed 状态。\n"
+            "2. 可以使用只读工具收集必要上下文，例如 ls、read_file、glob、grep 或只读分析工具。\n"
+            "3. 不要调用 write_file、edit_file、execute、copy_ra3_map、run_ra3_csharp_script，"
+            "也不要执行会写入文件、运行脚本、复制地图或改变外部状态的工具。\n"
+            "4. 如果信息不足，仍然先创建一个基于当前假设的计划，并在回复中列出需要用户确认的问题。\n"
+            "5. 最终回复只总结计划、风险和建议下一步，不要声称已经完成实际修改。\n\n用户请求："
             f"{prompt}"
         )
     return prompt

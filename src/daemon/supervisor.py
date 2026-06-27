@@ -45,6 +45,7 @@ from daemon.api.protocol import (
     EVENT_ERROR,
     EVENT_RUN_STARTED,
     EVENT_STATUS,
+    EVENT_TODOS_UPDATED,
     EVENT_TOOL_CALL,
     EVENT_TOOL_RESULT,
     TERMINAL_STATUSES,
@@ -59,12 +60,51 @@ from daemon.runtime import (
     local_reply_for_prompt,
     message_text,
     normalize_agent_mode,
+    normalize_permission_policy,
     prompt_for_policy,
     tool_result_text,
 )
 
 
 MAX_TOOL_RESULT_CHARS = 12000
+TODO_STATUSES = {"pending", "in_progress", "completed"}
+
+
+def _todos_from_tool_args(args) -> tuple[bool, list[dict[str, str]]]:
+    """Return normalized write_todos payload when args contain a full list."""
+    value = decode_tool_args(args) if isinstance(args, str) else args
+    if not isinstance(value, dict) or "todos" not in value:
+        return False, []
+
+    raw_todos = value.get("todos")
+    if not isinstance(raw_todos, list):
+        return True, []
+
+    todos: list[dict[str, str]] = []
+    for item in raw_todos:
+        if not isinstance(item, dict):
+            continue
+        content = str(item.get("content") or "").strip()
+        status = str(item.get("status") or "pending").strip()
+        if status not in TODO_STATUSES:
+            status = "pending"
+        if content:
+            todos.append({"content": content, "status": status})
+    return True, todos
+
+
+def _todo_progress(todos: list[dict[str, str]]) -> dict[str, int]:
+    total = len(todos)
+    completed = sum(1 for item in todos if item.get("status") == "completed")
+    in_progress = sum(1 for item in todos if item.get("status") == "in_progress")
+    percentage = round((completed / total) * 100) if total else 0
+    return {
+        "total": total,
+        "completed": completed,
+        "inProgress": in_progress,
+        "pending": max(total - completed - in_progress, 0),
+        "percentage": percentage,
+    }
 
 
 @dataclass
@@ -84,6 +124,8 @@ class RunState:
     model_name: str = ""
     model_config: ModelConfig | None = None
     usage_recorded: bool = False
+    todos: list[dict[str, str]] = field(default_factory=list)
+    todos_signature: str = ""
     started_at: float = field(default_factory=perf_counter)
     cancel_requested: threading.Event = field(default_factory=threading.Event)
 
@@ -139,7 +181,7 @@ class RunSupervisor:
                 thread_id=thread_id,
                 agent_mode=normalize_agent_mode(agent_mode),
                 project_id=project_id or DEFAULT_PROJECT_ID,
-                permission_policy=permission_policy or "once",
+                permission_policy=normalize_permission_policy(permission_policy),
             )
             self._capture_model(state)
             self._runs[run_id] = state
@@ -266,6 +308,7 @@ class RunSupervisor:
 
         project = open_project(state.project_id)
         tool_calls: dict[str, dict] = {}
+        tool_call_ids_by_index: dict[int, str] = {}
         try:
             # Local shortcut: RA3 mode asking for the skill list.
             local_reply = (
@@ -317,7 +360,14 @@ class RunSupervisor:
                 if isinstance(chunk, AIMessageChunk):
                     state.usage = merge_token_usage(state.usage, usage_from_message(chunk))
                     for tool_call in chunk.tool_call_chunks or []:
-                        tool_id = tool_call.get("id") or f"tool-{tool_call.get('index', 0)}"
+                        tool_index = int(tool_call.get("index") or 0)
+                        if tool_call.get("id"):
+                            tool_call_ids_by_index[tool_index] = tool_call["id"]
+                        tool_id = (
+                            tool_call.get("id")
+                            or tool_call_ids_by_index.get(tool_index)
+                            or f"tool-{tool_index}"
+                        )
                         known_call = tool_calls.setdefault(
                             tool_id,
                             {
@@ -344,6 +394,8 @@ class RunSupervisor:
                             )
                         if tool_call.get("args"):
                             known_call["args"] += tool_call["args"]
+                            if known_call.get("name") == "write_todos":
+                                self._emit_todos_from_tool_args(state, known_call["args"])
 
                     piece = message_text(chunk)
                     if piece:
@@ -374,6 +426,8 @@ class RunSupervisor:
                     )
                     known_call["status"] = "completed"
                     elapsed = perf_counter() - known_call["startedAt"]
+                    if known_call.get("name") == "write_todos":
+                        self._emit_todos_from_tool_args(state, known_call.get("args", ""))
                     state.emit(
                         {
                             "type": EVENT_TOOL_RESULT,
@@ -437,6 +491,23 @@ class RunSupervisor:
 
     # -- persistence helpers ---------------------------------------------
 
+    def _emit_todos_from_tool_args(self, state: RunState, args) -> None:
+        valid, todos = _todos_from_tool_args(args)
+        if not valid:
+            return
+        signature = json.dumps(todos, ensure_ascii=False, sort_keys=True)
+        if signature == state.todos_signature:
+            return
+        state.todos = todos
+        state.todos_signature = signature
+        state.emit(
+            {
+                "type": EVENT_TODOS_UPDATED,
+                "todos": todos,
+                "progress": _todo_progress(todos),
+            }
+        )
+
     def _save_assistant_message(self, state: RunState, project, status: str) -> None:
         content = state.assistant_text.strip()
         if not content and status == "cancelled":
@@ -483,6 +554,8 @@ class RunSupervisor:
             "status": status,
             "history": list_conversations(project),
             "usage": usage,
+            "todos": state.todos,
+            "todoProgress": _todo_progress(state.todos),
         }
 
 

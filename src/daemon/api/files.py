@@ -89,10 +89,11 @@ def rename_item(body: RenameItemBody):
 
 class DeleteItemBody(ProjectRefBody):
     path: str
+    deleteMode: str | None = "trash"
 
 
 @router.post("/files/delete")
 def delete_item(body: DeleteItemBody):
     project = _resolve(body.project, body.projectId)
-    result = delete_project_item(project, body.path)
+    result = delete_project_item(project, body.path, body.deleteMode)
     return ok(**result)

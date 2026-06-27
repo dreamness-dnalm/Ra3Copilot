@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import ctypes
 import shutil
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -33,6 +35,20 @@ TEXT_EXTENSIONS = {
     ".str",
     ".big",
 }
+DELETE_MODES = {"trash", "permanent"}
+
+
+class SHFileOperationStruct(ctypes.Structure):
+    _fields_ = [
+        ("hwnd", ctypes.c_void_p),
+        ("wFunc", ctypes.c_uint),
+        ("pFrom", ctypes.c_wchar_p),
+        ("pTo", ctypes.c_wchar_p),
+        ("fFlags", ctypes.c_ushort),
+        ("fAnyOperationsAborted", ctypes.c_bool),
+        ("hNameMappings", ctypes.c_void_p),
+        ("lpszProgressTitle", ctypes.c_wchar_p),
+    ]
 
 
 def _project_root(project: ProjectEntry) -> Path:
@@ -233,15 +249,53 @@ def rename_project_item(project: ProjectEntry, relative_path: str, new_name: str
     return {"path": _relative_path(target, _project_root(project)), "tree": list_project_files(project)}
 
 
-def delete_project_item(project: ProjectEntry, relative_path: str) -> dict:
+def _normalize_delete_mode(delete_mode: str | None) -> str:
+    mode = str(delete_mode or "trash").strip().lower()
+    if mode in {"recycle", "recycle_bin"}:
+        mode = "trash"
+    if mode not in DELETE_MODES:
+        raise ValueError("未知删除方式")
+    return mode
+
+
+def _move_to_recycle_bin(path: Path) -> None:
+    if not sys.platform.startswith("win"):
+        raise ValueError("当前系统暂不支持移入回收站，请选择彻底删除")
+
+    operation = SHFileOperationStruct()
+    operation.hwnd = None
+    operation.wFunc = 3  # FO_DELETE
+    operation.pFrom = str(path) + "\0\0"
+    operation.pTo = None
+    operation.fFlags = 0x0040 | 0x0010 | 0x0004 | 0x0400  # ALLOWUNDO, NOCONFIRMATION, SILENT, NOERRORUI
+    operation.fAnyOperationsAborted = False
+    operation.hNameMappings = None
+    operation.lpszProgressTitle = None
+
+    result = ctypes.windll.shell32.SHFileOperationW(ctypes.byref(operation))
+    if result != 0:
+        raise OSError(f"移入回收站失败，错误码：{result}")
+    if operation.fAnyOperationsAborted:
+        raise OSError("移入回收站已取消")
+
+
+def _delete_permanently(path: Path) -> None:
+    if path.is_dir():
+        shutil.rmtree(path)
+    else:
+        path.unlink()
+
+
+def delete_project_item(project: ProjectEntry, relative_path: str, delete_mode: str | None = "trash") -> dict:
     path = _resolve_project_path(project, relative_path)
     root = _project_root(project)
     if path == root:
         raise ValueError("不能删除工程根目录")
     if not path.exists():
         raise ValueError("文件或文件夹不存在")
-    if path.is_dir():
-        shutil.rmtree(path)
+    mode = _normalize_delete_mode(delete_mode)
+    if mode == "trash":
+        _move_to_recycle_bin(path)
     else:
-        path.unlink()
+        _delete_permanently(path)
     return {"tree": list_project_files(project)}

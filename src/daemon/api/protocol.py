@@ -47,6 +47,7 @@ def fail(message: str, *, error_code: str = UPSTREAM_ERROR, **payload: Any) -> d
 EVENT_RUN_STARTED = "run_started"
 EVENT_STATUS = "status"
 EVENT_ASSISTANT_DELTA = "assistant_delta"
+EVENT_TODOS_UPDATED = "todos_updated"
 EVENT_TOOL_CALL = "tool_call"
 EVENT_TOOL_RESULT = "tool_result"
 EVENT_ERROR = "error"

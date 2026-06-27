@@ -1790,6 +1790,32 @@
       padding: 14px;
     }
 
+    .delete-dialog {
+      width: min(520px, 100%);
+    }
+
+    .delete-dialog-copy {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 14px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .delete-dialog-copy strong {
+      color: var(--fg);
+      font-size: 14px;
+      overflow-wrap: anywhere;
+    }
+
+    .delete-dialog-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
     .chat-header {
       display: flex;
       align-items: center;
@@ -1832,6 +1858,81 @@
       color: var(--muted);
       font-size: 12px;
       white-space: nowrap;
+    }
+
+    .chat-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .panel-action-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: color-mix(in oklch, var(--surface-2) 70%, var(--surface));
+    }
+
+    .panel-action-btn {
+      width: 28px;
+      height: 28px;
+      display: inline-grid;
+      place-items: center;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--muted);
+      font: 700 13px/1 var(--font-mono);
+    }
+
+    .panel-action-btn:hover,
+    .panel-action-btn.active {
+      background: var(--surface);
+      color: var(--fg);
+      box-shadow: inset 0 0 0 1px var(--border);
+    }
+
+    .panel-toggle-icon {
+      position: relative;
+      display: block;
+      width: 17px;
+      height: 15px;
+      border: 1.5px solid currentColor;
+      border-radius: 4px;
+    }
+
+    .panel-toggle-icon::before {
+      content: "";
+      position: absolute;
+      top: 2px;
+      right: 4px;
+      bottom: 2px;
+      width: 1.5px;
+      border-radius: 999px;
+      background: currentColor;
+    }
+
+    .panel-toggle-icon::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      right: -4px;
+      width: 6px;
+      height: 6px;
+      border-top: 1.5px solid currentColor;
+      border-right: 1.5px solid currentColor;
+      transform: translateY(-50%) rotate(45deg);
+      transform-origin: center;
+    }
+
+    .panel-action-btn.panel-hidden-state .panel-toggle-icon::after {
+      right: auto;
+      left: -4px;
+      transform: translateY(-50%) rotate(225deg);
     }
 
     .messages {
@@ -2018,6 +2119,130 @@
     .status-line {
       color: var(--muted);
       font-size: 13px;
+    }
+
+    .todo-panel {
+      margin: 0 0 14px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: color-mix(in oklch, var(--surface-2) 58%, var(--surface));
+    }
+
+    .todo-panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 10px;
+    }
+
+    .todo-panel-title {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .todo-panel-title strong {
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .todo-panel-title span,
+    .todo-status {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .todo-percent {
+      flex: 0 0 auto;
+      color: var(--accent);
+      font-weight: 720;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .todo-progress-track {
+      height: 6px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: var(--surface-3);
+    }
+
+    .todo-progress-bar {
+      display: block;
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width .18s ease;
+    }
+
+    .todo-list {
+      display: grid;
+      gap: 7px;
+      margin: 10px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .todo-item {
+      display: grid;
+      grid-template-columns: 18px minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: start;
+      min-width: 0;
+    }
+
+    .todo-check {
+      width: 14px;
+      height: 14px;
+      margin-top: 2px;
+      display: inline-grid;
+      place-items: center;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--surface);
+    }
+
+    .todo-check::after {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 2px;
+      background: transparent;
+    }
+
+    .todo-item[data-status="completed"] .todo-check {
+      border-color: color-mix(in oklch, var(--success) 68%, var(--border));
+      background: color-mix(in oklch, var(--success) 16%, var(--surface));
+    }
+
+    .todo-item[data-status="completed"] .todo-check::after {
+      background: var(--success);
+    }
+
+    .todo-item[data-status="in_progress"] .todo-check {
+      border-color: color-mix(in oklch, var(--accent) 70%, var(--border));
+      background: color-mix(in oklch, var(--accent) 12%, var(--surface));
+    }
+
+    .todo-item[data-status="in_progress"] .todo-check::after {
+      background: var(--accent);
+    }
+
+    .todo-text {
+      min-width: 0;
+      overflow-wrap: anywhere;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .todo-item[data-status="completed"] .todo-text {
+      color: var(--muted);
+      text-decoration: line-through;
+      text-decoration-thickness: 1px;
     }
 
     code {
@@ -2381,6 +2606,174 @@
       white-space: nowrap;
     }
 
+    .context-usage-shell {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      flex: 0 0 auto;
+    }
+
+    .context-usage-btn {
+      min-width: 32px;
+      min-height: 28px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 0 9px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .context-usage-btn:hover,
+    .context-usage-btn:focus-visible,
+    .context-usage-shell.open .context-usage-btn {
+      background: var(--surface-2);
+      border-color: color-mix(in oklch, var(--border) 70%, var(--accent));
+      color: var(--fg);
+    }
+
+    .context-usage-ring {
+      --context-used: 0deg;
+      --context-color: var(--muted);
+      width: 15px;
+      height: 15px;
+      position: relative;
+      display: inline-block;
+      flex: 0 0 auto;
+      border-radius: 999px;
+      background:
+        conic-gradient(var(--context-color) var(--context-used), color-mix(in oklch, var(--border) 78%, transparent) 0);
+    }
+
+    .context-usage-ring::after {
+      content: "";
+      position: absolute;
+      inset: 4px;
+      border-radius: inherit;
+      background: var(--surface);
+    }
+
+    .context-usage-btn:hover .context-usage-ring::after,
+    .context-usage-btn:focus-visible .context-usage-ring::after,
+    .context-usage-shell.open .context-usage-ring::after {
+      background: var(--surface-2);
+    }
+
+    .context-usage-label {
+      max-width: 88px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .context-usage-popover {
+      width: 288px;
+      position: absolute;
+      right: 0;
+      bottom: calc(100% + 84px);
+      z-index: 35;
+      max-height: min(420px, calc(100vh - 210px));
+      overflow: auto;
+      padding: 13px 13px 12px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: color-mix(in oklch, var(--surface) 96%, white);
+      box-shadow: 0 18px 42px color-mix(in oklch, var(--fg) 12%, transparent);
+      opacity: 0;
+      transform: translateY(4px);
+      pointer-events: none;
+      transition: opacity .14s ease, transform .14s ease;
+    }
+
+    .context-usage-shell:hover .context-usage-popover,
+    .context-usage-shell:focus-within .context-usage-popover,
+    .context-usage-shell.open .context-usage-popover {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .context-usage-title {
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+      line-height: 1.35;
+    }
+
+    .context-usage-percent {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+    }
+
+    .context-usage-percent strong {
+      color: var(--fg);
+      font-size: 14px;
+    }
+
+    .context-usage-total {
+      margin-top: 3px;
+      color: var(--fg);
+      font-size: 13px;
+      text-align: center;
+    }
+
+    .context-usage-meta {
+      margin-top: 4px;
+      color: var(--muted);
+      font: 600 11px/1.3 var(--font-mono);
+      text-align: center;
+    }
+
+    .context-section-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .context-section-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .context-section-row strong {
+      min-width: 0;
+      overflow: hidden;
+      color: var(--fg);
+      font-size: 12px;
+      font-weight: 600;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .context-section-row span {
+      font: 600 11px/1 var(--font-mono);
+      white-space: nowrap;
+    }
+
+    .context-section-bar {
+      grid-column: 1 / -1;
+      height: 5px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: color-mix(in oklch, var(--border) 62%, transparent);
+    }
+
+    .context-section-fill {
+      width: var(--section-width, 0%);
+      height: 100%;
+      border-radius: inherit;
+      background: var(--section-color, var(--accent));
+    }
+
     .model-switcher {
       max-width: 260px;
       min-width: 0;
@@ -2507,6 +2900,7 @@
       margin-left: auto;
       display: flex;
       align-items: center;
+      gap: 2px;
       padding-right: 4px;
     }
     .panel-toolbar button {
@@ -2654,8 +3048,98 @@
     }
 
     .file-detail-view.hidden,
+    .terminal-detail-view.hidden,
     .detail-stack.hidden {
       display: none;
+    }
+
+    .terminal-detail-view {
+      display: grid;
+      grid-template-rows: auto minmax(240px, 1fr) auto;
+      min-height: 0;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 0 0 16px 16px;
+      background: var(--surface);
+    }
+
+    .terminal-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 11px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .terminal-title {
+      min-width: 0;
+      display: grid;
+      gap: 3px;
+    }
+
+    .terminal-title strong {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font: 700 13px/1.2 var(--font-mono);
+    }
+
+    .terminal-title span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--muted);
+      font: 600 11px/1.2 var(--font-mono);
+    }
+
+    .terminal-output {
+      min-height: 0;
+      overflow: auto;
+      padding: 11px;
+      background: oklch(21% 0.015 250);
+      color: oklch(92% 0.02 145);
+      font: 12px/1.5 var(--font-mono);
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .terminal-output .terminal-muted {
+      color: oklch(72% 0.025 245);
+    }
+
+    .terminal-output .terminal-error {
+      color: oklch(82% 0.16 25);
+    }
+
+    .terminal-output .terminal-success {
+      color: oklch(82% 0.13 145);
+    }
+
+    .terminal-command-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      padding: 9px 11px 11px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .terminal-command-input {
+      width: 100%;
+      min-height: 30px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0 10px;
+      background: var(--surface-2);
+      color: var(--fg);
+      font: 12px/1.2 var(--font-mono);
+    }
+
+    .terminal-command-input:focus {
+      outline: 0;
+      border-color: color-mix(in oklch, var(--accent) 50%, var(--border));
     }
 
     .file-editor-meta {
@@ -3541,8 +4025,14 @@
               <h1 id="sessionTitle">当前对话</h1>
               <p id="projectRootLabel">准备读取脚本与地图配置</p>
             </div>
-            <div class="model-chip">
-              <span id="runStatusLabel">等待桌面桥</span>
+            <div class="chat-actions">
+              <div class="model-chip">
+                <span id="runStatusLabel">等待桌面桥</span>
+              </div>
+              <div class="panel-action-group" aria-label="右侧面板">
+                <button class="panel-action-btn" type="button" id="openTerminalTabBtn" aria-label="新建终端标签" title="新建终端标签">&gt;_</button>
+                <button class="panel-action-btn" type="button" id="togglePanelBtn" aria-label="显示右侧面板" title="显示右侧面板" aria-pressed="false"><span class="panel-toggle-icon" aria-hidden="true"></span></button>
+              </div>
             </div>
           </header>
 
@@ -3583,6 +4073,11 @@
                   <span class="option-label">先说明计划，本轮暂不调用工具</span>
                   <span class="option-hint">安全</span>
                 </button>
+                <button class="permission-option" type="button" role="radio" aria-checked="false" data-policy="plan">
+                  <span class="option-index">4</span>
+                  <span class="option-label">计划模式，创建任务计划</span>
+                  <span class="option-hint">Plan</span>
+                </button>
               </div>
               <div class="permission-actions">
                 <span class="permission-note" id="permissionNote">标准运行会让 Agent 按需调用本地工具。</span>
@@ -3603,7 +4098,19 @@
                     </select>
                   </label>
                   <button class="pill" type="button" id="permissionMenuBtn" aria-expanded="false" aria-controls="permissionPopover">运行偏好</button>
-                  <span class="pill">上下文：当前工作区</span>
+                  <div class="context-usage-shell" id="contextUsageShell">
+                    <button class="context-usage-btn" type="button" id="contextUsageBtn" aria-expanded="false" aria-controls="contextUsagePopover" aria-label="查看上下文窗口">
+                      <span class="context-usage-ring" id="contextUsageRing" aria-hidden="true"></span>
+                      <span class="context-usage-label" id="contextUsageLabel">上下文 --</span>
+                    </button>
+                    <div class="context-usage-popover" id="contextUsagePopover" role="dialog" aria-label="背景信息窗口" aria-hidden="true">
+                      <div class="context-usage-title">背景信息窗口：</div>
+                      <div class="context-usage-percent"><strong id="contextUsagePercent">--</strong> 已用</div>
+                      <div class="context-usage-total" id="contextUsageTotal">已用 -- 标记，共 --</div>
+                      <div class="context-usage-meta" id="contextUsageMeta">估算值</div>
+                      <div class="context-section-list" id="contextUsageSections"></div>
+                    </div>
+                  </div>
                 </div>
                 <div class="tool-settings">
                   <button class="ghost-btn" type="button" id="stopBtn" disabled>中止</button>
@@ -4194,6 +4701,25 @@
           </section>
         </div>
 
+        <div class="modal-backdrop hidden" id="deleteConfirmDialog" role="dialog" aria-modal="true" aria-labelledby="deleteConfirmTitle">
+          <section class="provider-dialog delete-dialog">
+            <header class="dialog-header">
+              <h2 id="deleteConfirmTitle">删除项目项</h2>
+            </header>
+            <div class="dialog-body">
+              <div class="delete-dialog-copy">
+                <strong id="deleteConfirmName">未选择文件</strong>
+                <span id="deleteConfirmMessage">请选择删除方式。</span>
+              </div>
+              <div class="delete-dialog-actions">
+                <button class="primary-btn" type="button" data-delete-choice="trash">移入回收站</button>
+                <button class="danger-btn" type="button" data-delete-choice="permanent">彻底删除</button>
+                <button class="ghost-btn" type="button" data-delete-choice="cancel">取消</button>
+              </div>
+            </div>
+          </section>
+        </div>
+
         <div class="modal-backdrop hidden" id="providerDialog" role="dialog" aria-modal="true" aria-labelledby="providerDialogTitle">
           <section class="provider-dialog">
             <header class="dialog-header">
@@ -4259,6 +4785,8 @@
           <div class="panel-resizer" id="panelResizer" aria-hidden="true"></div>
           <div class="panel-tabs" id="panelTabs" role="tablist">
             <div class="panel-toolbar">
+              <button type="button" id="panelAddTabBtn" aria-label="新增标签" title="新增标签">+</button>
+              <button type="button" id="panelTerminalBtn" aria-label="新建终端标签" title="新建终端标签">&gt;_</button>
               <button type="button" id="closePanelBtn" aria-label="关闭面板" title="关闭面板">×</button>
             </div>
           </div>
@@ -4326,6 +4854,21 @@
                 <button class="primary-btn" type="button" id="saveFileBtn" disabled>保存修改</button>
               </div>
             </div>
+
+            <div class="panel-tab-pane terminal-detail-view hidden" id="terminalDetailView">
+              <div class="terminal-header">
+                <div class="terminal-title">
+                  <strong id="terminalTitle">终端</strong>
+                  <span id="terminalCwd">当前工作区</span>
+                </div>
+                <button class="ghost-btn" type="button" id="terminalClearBtn">清空</button>
+              </div>
+              <pre class="terminal-output" id="terminalOutput" aria-label="终端输出"></pre>
+              <div class="terminal-command-row">
+                <input class="terminal-command-input" id="terminalCommandInput" type="text" spellcheck="false" autocomplete="off" placeholder="输入命令" />
+                <button class="primary-btn" type="button" id="terminalRunBtn">运行</button>
+              </div>
+            </div>
           </div>
         </aside>
       </div>
@@ -4339,6 +4882,11 @@
         <button type="button" role="menuitem" id="fileMenuNewFolder">新建文件夹</button>
         <button type="button" role="menuitem" id="fileMenuRename">重命名</button>
         <button class="danger-menu-item" type="button" role="menuitem" id="fileMenuDelete">删除</button>
+      </div>
+      <div class="context-menu" id="panelAddMenu" role="menu" hidden>
+        <button type="button" role="menuitem" id="panelMenuNewTerminal">新建终端</button>
+        <button type="button" role="menuitem" id="panelMenuOpenSelectedFile">打开选中文件</button>
+        <button type="button" role="menuitem" id="panelMenuShowFiles">查看项目文件</button>
       </div>
       <div class="resize-handle n" data-resize-edge="n"></div>
       <div class="resize-handle e" data-resize-edge="e"></div>
@@ -4366,6 +4914,8 @@
       assistantBuffer: "",
       runStartedAt: 0,
       tools: new Map(),
+      todos: [],
+      todoProgress: null,
       lastPrompt: "",
       busy: false,
       activeView: "welcome",
@@ -4378,6 +4928,9 @@
       workspaceConfig: null,
       workspaceRuntime: null,
       settingsLoadedFromBridge: false,
+      contextUsage: null,
+      contextUsageRequestId: 0,
+      contextUsageTimer: null,
       conversationUsage: null,
       conversationUsageId: "",
       sidebarMode: "history",
@@ -4392,6 +4945,8 @@
       fileDirty: false,
       fileContextPath: "",
       fileContextType: "",
+      terminalSessions: new Map(),
+      terminalCounter: 0,
       selectedProviderName: "",
       fetchedModels: [],
       selectedModelKey: "",
@@ -4407,6 +4962,7 @@
       projectDialogAgentMode: "ra3",
       projectPathTouched: false,
       historyContextId: "",
+      deleteChoiceResolve: null,
       windowResize: null
     };
 
@@ -4414,6 +4970,8 @@
     const panelTabs = document.getElementById("panelTabs");
     const panelContent = document.getElementById("panelContent");
     const panelResizer = document.getElementById("panelResizer");
+    const panelAddTabBtn = document.getElementById("panelAddTabBtn");
+    const panelTerminalBtn = document.getElementById("panelTerminalBtn");
     const closePanelBtn = document.getElementById("closePanelBtn");
     const drawerToolName = document.getElementById("drawerToolName");
     const drawerSubtitle = document.getElementById("drawerSubtitle");
@@ -4436,6 +4994,15 @@
     const permissionSkip = document.getElementById("permissionSkip");
     const permissionNote = document.getElementById("permissionNote");
     const chatModelSelect = document.getElementById("chatModelSelect");
+    const contextUsageShell = document.getElementById("contextUsageShell");
+    const contextUsageBtn = document.getElementById("contextUsageBtn");
+    const contextUsageRing = document.getElementById("contextUsageRing");
+    const contextUsageLabel = document.getElementById("contextUsageLabel");
+    const contextUsagePopover = document.getElementById("contextUsagePopover");
+    const contextUsagePercent = document.getElementById("contextUsagePercent");
+    const contextUsageTotal = document.getElementById("contextUsageTotal");
+    const contextUsageMeta = document.getElementById("contextUsageMeta");
+    const contextUsageSections = document.getElementById("contextUsageSections");
     const companionStatusDot = document.getElementById("companionStatusDot");
     const runtimeInputTokens = document.getElementById("runtimeInputTokens");
     const runtimeCachedInputTokens = document.getElementById("runtimeCachedInputTokens");
@@ -4443,6 +5010,8 @@
     const runtimeCacheRate = document.getElementById("runtimeCacheRate");
     const runtimeCost = document.getElementById("runtimeCost");
     const openNewWindowBtn = document.getElementById("openNewWindowBtn");
+    const openTerminalTabBtn = document.getElementById("openTerminalTabBtn");
+    const togglePanelBtn = document.getElementById("togglePanelBtn");
     const welcomePane = document.getElementById("welcomePane");
     const agentSelectPane = document.getElementById("agentSelectPane");
     const ra3WelcomePane = document.getElementById("ra3WelcomePane");
@@ -4481,6 +5050,10 @@
     const sessionTitle = document.getElementById("sessionTitle");
     const windowTitleText = document.getElementById("windowTitleText");
     const windowSubtitleText = document.getElementById("windowSubtitleText");
+    const deleteConfirmDialog = document.getElementById("deleteConfirmDialog");
+    const deleteConfirmTitle = document.getElementById("deleteConfirmTitle");
+    const deleteConfirmName = document.getElementById("deleteConfirmName");
+    const deleteConfirmMessage = document.getElementById("deleteConfirmMessage");
     const runStatusLabel = document.getElementById("runStatusLabel");
     const newChatBtn = document.getElementById("newChatBtn");
     const conversationList = document.getElementById("conversationList");
@@ -4507,6 +5080,10 @@
     const fileMenuNewFolder = document.getElementById("fileMenuNewFolder");
     const fileMenuRename = document.getElementById("fileMenuRename");
     const fileMenuDelete = document.getElementById("fileMenuDelete");
+    const panelAddMenu = document.getElementById("panelAddMenu");
+    const panelMenuNewTerminal = document.getElementById("panelMenuNewTerminal");
+    const panelMenuOpenSelectedFile = document.getElementById("panelMenuOpenSelectedFile");
+    const panelMenuShowFiles = document.getElementById("panelMenuShowFiles");
     const resizeHandles = Array.from(document.querySelectorAll("[data-resize-edge]"));
     const backToChatBtn = document.getElementById("backToChatBtn");
     const chatPane = document.querySelector(".chat-pane");
@@ -4524,6 +5101,13 @@
     const fileEditor = document.getElementById("fileEditor");
     const reloadFileBtn = document.getElementById("reloadFileBtn");
     const saveFileBtn = document.getElementById("saveFileBtn");
+    const terminalDetailView = document.getElementById("terminalDetailView");
+    const terminalTitle = document.getElementById("terminalTitle");
+    const terminalCwd = document.getElementById("terminalCwd");
+    const terminalOutput = document.getElementById("terminalOutput");
+    const terminalCommandInput = document.getElementById("terminalCommandInput");
+    const terminalRunBtn = document.getElementById("terminalRunBtn");
+    const terminalClearBtn = document.getElementById("terminalClearBtn");
     const settingsTabs = Array.from(document.querySelectorAll(".settings-tab-btn"));
     const providersSettingsPage = document.getElementById("providersSettingsPage");
     const modelsSettingsPage = document.getElementById("modelsSettingsPage");
@@ -4697,6 +5281,7 @@
       stop_run:            { p: "/runs/stop",   a: ["runId"] },
       // context / agent
       get_context:         { p: "/context",     a: [], inject: ["project","thread","mode"] },
+      get_context_usage:   { p: "/context/usage", a: ["draftText"], inject: ["project","thread","mode"] },
       set_agent_mode:      { p: "/agent/mode",  a: ["agentMode"], inject: ["project","thread"] },
       // projects
       get_projects:        { p: "/projects/list", a: ["projectId"] },
@@ -4719,7 +5304,8 @@
       save_project_file:   { p: "/files/save",   a: ["path", "content", "encoding"], inject: ["project"] },
       create_project_item: { p: "/files/create", a: ["parentPath", "name", "kind"], inject: ["project"] },
       rename_project_item: { p: "/files/rename", a: ["path", "newName"], inject: ["project"] },
-      delete_project_item: { p: "/files/delete", a: ["path"], inject: ["project"] },
+      delete_project_item: { p: "/files/delete", a: ["path", "deleteMode"], inject: ["project"] },
+      run_terminal_command: { p: "/terminal/run", a: ["command"], inject: ["project"] },
       // settings
       get_settings:        { p: "/settings/get", a: [] },
       save_provider:       { p: "/settings/provider/save", a: ["provider", "originalName"] },
@@ -5385,6 +5971,148 @@
       })}%`;
     }
 
+    const CONTEXT_SECTION_LABELS = {
+      system: "System",
+      tools: "Tools",
+      skills: "Skills",
+      instructions: "Instructions",
+      project: "Project",
+      history: "History",
+      draft: "Draft"
+    };
+
+    const CONTEXT_SECTION_COLORS = {
+      system: "#2563eb",
+      tools: "#7c3aed",
+      skills: "#0f766e",
+      instructions: "#b45309",
+      project: "#64748b",
+      history: "#db2777",
+      draft: "#16a34a"
+    };
+
+    function formatCompactTokens(value) {
+      const number = Number(value || 0);
+      if (!Number.isFinite(number) || number <= 0) return "0";
+      if (number >= 1_000_000) return `${formatDecimal(number / 1_000_000, 1)}m`;
+      if (number >= 1_000) return `${formatDecimal(number / 1_000, 0)}k`;
+      return formatInteger(number);
+    }
+
+    function contextUsageColor(percent) {
+      const value = Number(percent || 0);
+      if (value >= 0.95) return "#b42318";
+      if (value >= 0.82) return "#c2410c";
+      if (value >= 0.68) return "#b7791f";
+      return "#16815a";
+    }
+
+    function renderContextUsage() {
+      if (!contextUsageLabel || !contextUsageRing) return;
+      const usage = state.contextUsage || null;
+      if (!usage) {
+        contextUsageLabel.textContent = "上下文 --";
+        contextUsageRing.style.setProperty("--context-used", "0deg");
+        contextUsageRing.style.setProperty("--context-color", "var(--muted)");
+        if (contextUsagePercent) contextUsagePercent.textContent = "--";
+        if (contextUsageTotal) contextUsageTotal.textContent = "已用 -- 标记，共 --";
+        if (contextUsageMeta) contextUsageMeta.textContent = "等待上下文数据";
+        if (contextUsageSections) contextUsageSections.innerHTML = "";
+        if (contextUsageBtn) contextUsageBtn.title = "上下文窗口尚未加载";
+        return;
+      }
+
+      const usedTokens = Number(usage.usedTokens || 0);
+      const maxTokens = Number(usage.maxTokens || 0);
+      const usedPercent = maxTokens > 0 ? usedTokens / maxTokens : Number(usage.usedPercent || 0);
+      const clampedPercent = Math.max(0, Math.min(1, usedPercent));
+      const percentText = formatPercent(usedPercent);
+      const usedText = formatCompactTokens(usedTokens);
+      const maxText = maxTokens ? formatCompactTokens(maxTokens) : "--";
+      const color = contextUsageColor(usedPercent);
+
+      contextUsageLabel.textContent = `上下文 ${percentText}`;
+      contextUsageRing.style.setProperty("--context-used", `${Math.round(clampedPercent * 360)}deg`);
+      contextUsageRing.style.setProperty("--context-color", color);
+      if (contextUsagePercent) contextUsagePercent.textContent = percentText;
+      if (contextUsageTotal) contextUsageTotal.textContent = `已用 ${usedText} 标记，共 ${maxText}`;
+      if (contextUsageBtn) {
+        contextUsageBtn.title = `背景信息窗口：${percentText} 已用，已用 ${usedText} 标记，共 ${maxText}`;
+      }
+
+      const model = usage.model || {};
+      const modelLabel = model.provider_name && model.name
+        ? `${model.provider_name}/${model.name}`
+        : "默认窗口";
+      if (contextUsageMeta) {
+        contextUsageMeta.textContent = `${modelLabel} · ${usage.estimate ? "估算值" : "精确值"}`;
+      }
+
+      if (!contextUsageSections) return;
+      const stableIds = new Set(["system", "tools", "skills", "instructions", "project", "history"]);
+      const rows = (usage.sections || []).filter((section) => (
+        Number(section.tokens || 0) > 0 || stableIds.has(section.id)
+      ));
+      contextUsageSections.innerHTML = rows.map((section) => {
+        const id = String(section.id || "");
+        const sectionPercent = Number(section.percent || 0);
+        const width = Math.max(0, Math.min(100, sectionPercent * 100));
+        const visibleWidth = Number(section.tokens || 0) > 0 ? Math.max(width, 2) : 0;
+        const label = CONTEXT_SECTION_LABELS[id] || section.label || id || "Other";
+        const sectionColor = CONTEXT_SECTION_COLORS[id] || "var(--accent)";
+        return `
+          <div class="context-section-row">
+            <strong>${escapeHtml(label)}</strong>
+            <span>${formatCompactTokens(section.tokens)} · ${formatPercent(sectionPercent)}</span>
+            <div class="context-section-bar" aria-hidden="true">
+              <div class="context-section-fill" style="--section-width:${visibleWidth}%;--section-color:${escapeHtml(sectionColor)}"></div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function setContextUsageOpen(open) {
+      if (!contextUsageShell || !contextUsagePopover || !contextUsageBtn) return;
+      contextUsageShell.classList.toggle("open", Boolean(open));
+      contextUsagePopover.setAttribute("aria-hidden", open ? "false" : "true");
+      contextUsageBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+
+    async function loadContextUsage(force = false) {
+      if (!DAEMON_BASE_URL || !state.context) {
+        state.contextUsage = null;
+        renderContextUsage();
+        return;
+      }
+      const api = getApi();
+      if (!api || !api.get_context_usage) {
+        state.contextUsage = null;
+        renderContextUsage();
+        return;
+      }
+
+      const requestId = state.contextUsageRequestId + 1;
+      state.contextUsageRequestId = requestId;
+      try {
+        const result = await api.get_context_usage(promptInput?.value || "");
+        if (requestId !== state.contextUsageRequestId) return;
+        if (!result.ok) throw new Error(result.error || "读取上下文窗口失败");
+        state.contextUsage = result.usage || null;
+        renderContextUsage();
+      } catch (error) {
+        if (requestId !== state.contextUsageRequestId) return;
+        if (force) console.warn("Failed to load context usage", error);
+      }
+    }
+
+    function scheduleContextUsageRefresh(delay = 350) {
+      window.clearTimeout(state.contextUsageTimer);
+      state.contextUsageTimer = window.setTimeout(() => {
+        loadContextUsage(false).catch((error) => console.warn("Context usage refresh failed", error));
+      }, delay);
+    }
+
     function dayToUtcDate(day) {
       const [year, month, date] = String(day || "").split("-").map(Number);
       return new Date(Date.UTC(year || 1970, (month || 1) - 1, date || 1));
@@ -5670,6 +6398,20 @@
     function applyHistorySnapshot(snapshot) {
       state.history = Array.isArray(snapshot) ? snapshot.slice() : [];
       renderConversationList();
+    }
+
+    function setActiveConversationId(conversationId) {
+      const id = String(conversationId || "").trim();
+      if (!id) return;
+      if (!state.context) state.context = {};
+      if (state.context.threadId !== id) {
+        state.context.threadId = id;
+        state.conversationUsage = null;
+        state.conversationUsageId = "";
+        renderConversationUsage();
+      }
+      renderConversationList();
+      scheduleContextUsageRefresh(0);
     }
 
     async function loadHistory() {
@@ -6196,6 +6938,7 @@
     const panelPanes = {
       tool: toolDetailView,
       file: fileDetailView,
+      terminal: terminalDetailView,
     };
     let panelActiveKey = null;
 
@@ -6205,12 +6948,41 @@
 
     function showPanel() {
       document.querySelector(".workspace").classList.remove("panel-hidden");
+      updatePanelToggleButton();
     }
     function hidePanel() {
       document.querySelector(".workspace").classList.add("panel-hidden");
+      closePanelAddMenu();
+      updatePanelToggleButton();
     }
     function panelVisible() {
       return !document.querySelector(".workspace").classList.contains("panel-hidden");
+    }
+
+    function updatePanelToggleButton() {
+      if (!togglePanelBtn) return;
+      const visible = panelVisible();
+      togglePanelBtn.classList.toggle("active", visible);
+      togglePanelBtn.classList.toggle("panel-visible-state", visible);
+      togglePanelBtn.classList.toggle("panel-hidden-state", !visible);
+      togglePanelBtn.setAttribute("aria-pressed", String(visible));
+      const label = visible ? "隐藏右侧面板" : "显示右侧面板";
+      togglePanelBtn.setAttribute("aria-label", label);
+      togglePanelBtn.title = label;
+    }
+
+    function togglePanelVisibility() {
+      if (panelVisible()) {
+        hidePanel();
+        return;
+      }
+      if (panelActiveKey && panelTabList.some((tab) => tab.key === panelActiveKey)) {
+        activatePanelTab(panelActiveKey);
+      } else if (panelTabList.length) {
+        activatePanelTab(panelTabList[panelTabList.length - 1].key);
+      } else {
+        openTerminalTab();
+      }
     }
 
     function renderPanelTabs() {
@@ -6222,7 +6994,8 @@
         el.className = "panel-tab" + (tab.key === panelActiveKey ? " active" : "") + (tab.dirty ? " dirty" : "");
         el.setAttribute("role", "tab");
         el.setAttribute("data-tab-key", tab.key);
-        el.innerHTML = `<span class="panel-tab-label" title="${escapeHtml(tab.title)}">${escapeHtml(tab.title)}</span><button class="panel-tab-close" type="button" aria-label="关闭标签">×</button>`;
+        const icon = tab.kind === "terminal" ? "&gt;_" : tab.kind === "file" ? "#" : "●";
+        el.innerHTML = `<span aria-hidden="true">${icon}</span><span class="panel-tab-label" title="${escapeHtml(tab.title)}">${escapeHtml(tab.title)}</span><button class="panel-tab-close" type="button" aria-label="关闭标签">×</button>`;
         el.addEventListener("click", (event) => {
           if (event.target.classList.contains("panel-tab-close")) {
             event.stopPropagation();
@@ -6267,7 +7040,10 @@
       const idx = panelTabList.findIndex((t) => t.key === key);
       if (idx < 0) return;
       const wasActive = panelActiveKey === key;
-      panelTabList.splice(idx, 1);
+      const [closed] = panelTabList.splice(idx, 1);
+      if (closed?.kind === "terminal") {
+        state.terminalSessions.delete(closed.key);
+      }
       if (wasActive) {
         if (panelTabList.length) {
           activatePanelTab(panelTabList[Math.max(0, idx - 1)].key);
@@ -6343,14 +7119,136 @@
       });
     }
 
+    function closePanelAddMenu() {
+      if (panelAddMenu) panelAddMenu.hidden = true;
+    }
+
+    function openPanelAddMenu() {
+      if (!panelAddMenu || !panelAddTabBtn) return;
+      panelMenuOpenSelectedFile.disabled = !(state.selectedFilePath && state.selectedFileType === "file");
+      const rect = panelAddTabBtn.getBoundingClientRect();
+      closeHistoryContextMenu();
+      closeFileContextMenu();
+      positionContextMenu(panelAddMenu, rect.left, rect.bottom + 4);
+    }
+
+    function terminalDefaultCommand() {
+      const platform = String(navigator.platform || "").toLowerCase();
+      return platform.includes("win") ? "dir" : "ls";
+    }
+
+    function terminalProjectPath() {
+      return state.context?.project?.path || "";
+    }
+
+    function terminalSessionForKey(key = panelActiveKey) {
+      return state.terminalSessions.get(key || "");
+    }
+
+    function terminalEntryHtml(entry) {
+      const className = entry.kind === "error"
+        ? "terminal-error"
+        : entry.kind === "success"
+          ? "terminal-success"
+          : entry.kind === "meta" || entry.kind === "command"
+            ? "terminal-muted"
+            : "";
+      return `<span class="${className}">${escapeHtml(entry.text || "")}</span>`;
+    }
+
+    function appendTerminalEntry(session, kind, text) {
+      session.entries.push({ kind, text: String(text || "") });
+    }
+
+    function renderTerminalPane(key = panelActiveKey) {
+      const session = terminalSessionForKey(key);
+      if (!session) return;
+      terminalTitle.textContent = session.title;
+      terminalCwd.textContent = session.cwd || terminalProjectPath() || "未选择工作区";
+      terminalOutput.innerHTML = session.entries.length
+        ? session.entries.map(terminalEntryHtml).join("\n")
+        : `<span class="terminal-muted">${escapeHtml(session.cwd || "当前工作区")}</span>`;
+      terminalRunBtn.disabled = Boolean(session.running);
+      terminalCommandInput.disabled = Boolean(session.running);
+      terminalCommandInput.value = session.command || "";
+      window.requestAnimationFrame(() => {
+        terminalOutput.scrollTop = terminalOutput.scrollHeight;
+      });
+    }
+
+    function openTerminalTab() {
+      state.terminalCounter += 1;
+      const key = `terminal:${Date.now()}:${state.terminalCounter}`;
+      const title = state.terminalCounter === 1 ? "终端" : `终端 ${state.terminalCounter}`;
+      const cwd = terminalProjectPath();
+      const session = {
+        key,
+        title,
+        cwd,
+        command: terminalDefaultCommand(),
+        running: false,
+        entries: [
+          { kind: "meta", text: cwd ? `# ${cwd}` : "# 未选择工作区" },
+        ],
+      };
+      state.terminalSessions.set(key, session);
+      openPanelTab("terminal", key, title, () => renderTerminalPane(key));
+      terminalCommandInput.focus();
+    }
+
+    async function runActiveTerminalCommand() {
+      const session = terminalSessionForKey();
+      if (!session || session.running) return;
+      const command = terminalCommandInput.value.trim();
+      if (!command) {
+        terminalCommandInput.focus();
+        return;
+      }
+      if (!state.context?.project) {
+        showToast("请先打开一个工作区");
+        return;
+      }
+      const api = getApi();
+      if (!api || !api.run_terminal_command) {
+        showToast("桌面桥尚未就绪");
+        return;
+      }
+
+      session.command = command;
+      session.running = true;
+      appendTerminalEntry(session, "command", `> ${command}`);
+      renderTerminalPane(session.key);
+
+      try {
+        const result = await api.run_terminal_command(command);
+        if (!result.ok) {
+          appendTerminalEntry(session, "error", result.error || "命令执行失败");
+        } else {
+          if (result.stdout) appendTerminalEntry(session, "output", result.stdout.replace(/\s+$/g, ""));
+          if (result.stderr) appendTerminalEntry(session, "error", result.stderr.replace(/\s+$/g, ""));
+          const statusText = result.timedOut
+            ? "timeout"
+            : `exit ${result.exitCode}`;
+          appendTerminalEntry(session, result.exitCode === 0 ? "success" : "meta", `[${statusText}]`);
+        }
+      } catch (error) {
+        appendTerminalEntry(session, "error", error?.message || String(error));
+      } finally {
+        session.running = false;
+        if (activePanelTabKey() === session.key) renderTerminalPane(session.key);
+      }
+    }
+
     function showToolDetailView() {
       toolDetailView.classList.remove("hidden");
       fileDetailView.classList.add("hidden");
+      terminalDetailView.classList.add("hidden");
     }
 
     function showFileDetailView() {
       toolDetailView.classList.add("hidden");
       fileDetailView.classList.remove("hidden");
+      terminalDetailView.classList.add("hidden");
     }
 
     function filePreviewScrollElement() {
@@ -6621,20 +7519,40 @@
       showToast("已重命名");
     }
 
+    function closeDeleteConfirmDialog(choice = "cancel") {
+      deleteConfirmDialog.classList.add("hidden");
+      const resolve = state.deleteChoiceResolve;
+      state.deleteChoiceResolve = null;
+      if (resolve) resolve(choice);
+    }
+
+    function chooseDeleteMode(path, type) {
+      const name = fileBaseName(path);
+      const itemLabel = type === "folder" ? "文件夹" : "文件";
+      deleteConfirmTitle.textContent = `删除${itemLabel}`;
+      deleteConfirmName.textContent = name;
+      deleteConfirmMessage.textContent = type === "folder"
+        ? "请选择删除方式。移入回收站后通常可以恢复；彻底删除会连同内部内容一起删除，且不可恢复。"
+        : "请选择删除方式。移入回收站后通常可以恢复；彻底删除将不可恢复。";
+      deleteConfirmDialog.classList.remove("hidden");
+      return new Promise((resolve) => {
+        state.deleteChoiceResolve = resolve;
+      });
+    }
+
     async function deleteSelectedProjectItem(path = state.selectedFilePath, type = state.selectedFileType) {
       if (!path) {
         showToast("先选择文件或文件夹");
         return;
       }
-      const name = fileBaseName(path);
-      const confirmed = window.confirm(`确定删除「${name}」？文件夹会连同内部内容一起删除。`);
-      if (!confirmed) return;
+      const deleteMode = await chooseDeleteMode(path, type);
+      if (deleteMode === "cancel") return;
       const api = getApi();
       if (!api || !api.delete_project_item) {
         showToast("桌面桥尚未就绪");
         return;
       }
-      const result = await api.delete_project_item(path);
+      const result = await api.delete_project_item(path, deleteMode);
       if (!result.ok) {
         showToast(result.error || "删除失败");
         return;
@@ -6646,7 +7564,7 @@
       }
       applyFileTree(result.tree);
       closePanelTab("file:" + path);
-      showToast("已删除");
+      showToast(deleteMode === "trash" ? "已移入回收站" : "已彻底删除");
     }
 
     async function saveActiveFile() {
@@ -6760,6 +7678,8 @@
       state.assistantArticle = null;
       state.assistantBody = null;
       state.assistantBuffer = "";
+      state.todos = [];
+      state.todoProgress = null;
       state.tools = new Map();
       Object.keys(toolDetails).forEach((key) => delete toolDetails[key]);
       // Tool tabs belong to the conversation; drop them but keep file tabs.
@@ -6806,7 +7726,11 @@
         showToast(result.error || "打开对话失败");
         return;
       }
-      if (result.context) applyContext(result.context, false);
+      if (result.context) {
+        applyContext({ ...result.context, threadId: result.context.threadId || conversationId }, false);
+      } else {
+        setActiveConversationId(conversationId);
+      }
       if (result.history) applyHistorySnapshot(result.history);
       await loadConversationUsage(true).catch((error) => showToast(error.message || String(error)));
       renderConversationMessages(result.conversation);
@@ -7533,6 +8457,7 @@
         renderChatModelSelect();
         return;
       }
+      await loadContextUsage(true);
       showToast("已切换模型，下一轮对话生效");
     }
 
@@ -8607,11 +9532,11 @@
       const prevProjectId = state.context?.project?.id;
       const nextProjectId = context?.project?.id;
       state.context = context;
-      // Switching projects invalidates open file tabs (their paths belong to
-      // the old project). Drop file tabs; tool tabs go with the conversation.
+      // Switching projects invalidates workspace-bound tabs. Tool tabs go with
+      // the conversation; file/terminal tabs belong to the project root.
       if (prevProjectId && nextProjectId && prevProjectId !== nextProjectId) {
         [...panelTabList].forEach((tab) => {
-          if (tab.kind === "file") closePanelTab(tab.key);
+          if (tab.kind === "file" || tab.kind === "terminal") closePanelTab(tab.key);
         });
       }
       renderCompanionStatus(context.ra3Companion);
@@ -8629,6 +9554,7 @@
       if (updateStatus) {
         runStatusLabel.textContent = context.agentReady ? "Agent 已缓存" : "准备就绪";
       }
+      scheduleContextUsageRefresh(0);
     }
     function setBusy(busy) {
       state.busy = busy;
@@ -8675,6 +9601,8 @@
 
     function appendAssistantMessage(metaText = "运行中") {
       cancelAssistantRender();
+      state.todos = [];
+      state.todoProgress = null;
       const agent = currentAgentMeta();
       const article = document.createElement("article");
       article.className = "message assistant";
@@ -8789,6 +9717,93 @@
       if (existing) existing.remove();
       if (!state.showUsageDetails) return;
       bubble.insertAdjacentHTML("beforeend", runUsageSummaryHtml(usage));
+      scrollMessages();
+    }
+
+    function normalizeTodoStatus(status) {
+      const value = String(status || "").trim();
+      return ["pending", "in_progress", "completed"].includes(value) ? value : "pending";
+    }
+
+    function normalizeTodos(value) {
+      if (!Array.isArray(value)) return [];
+      return value.map((item) => {
+        if (!item || typeof item !== "object") return null;
+        const content = String(item.content || "").trim();
+        if (!content) return null;
+        return {
+          content,
+          status: normalizeTodoStatus(item.status)
+        };
+      }).filter(Boolean);
+    }
+
+    function todoProgress(todos) {
+      const total = todos.length;
+      const completed = todos.filter((item) => item.status === "completed").length;
+      const inProgress = todos.filter((item) => item.status === "in_progress").length;
+      const pending = Math.max(total - completed - inProgress, 0);
+      const percentage = total ? Math.round((completed / total) * 100) : 0;
+      return { total, completed, inProgress, pending, percentage };
+    }
+
+    function todoStatusLabel(status) {
+      const labels = {
+        pending: "待处理",
+        in_progress: "进行中",
+        completed: "已完成"
+      };
+      return labels[status] || "待处理";
+    }
+
+    function todoPanelHtml(todos) {
+      const progress = todoProgress(todos);
+      const inProgressText = progress.inProgress ? ` · ${progress.inProgress} 进行中` : "";
+      const items = todos.map((todo) => `
+        <li class="todo-item" data-status="${escapeAttribute(todo.status)}">
+          <span class="todo-check" aria-hidden="true"></span>
+          <span class="todo-text">${escapeHtml(todo.content)}</span>
+          <span class="todo-status">${escapeHtml(todoStatusLabel(todo.status))}</span>
+        </li>
+      `).join("");
+      return `
+        <section class="todo-panel" data-todo-panel aria-label="任务进度">
+          <div class="todo-panel-head">
+            <div class="todo-panel-title">
+              <strong>任务进度</strong>
+              <span>${progress.completed}/${progress.total} 已完成${inProgressText}</span>
+            </div>
+            <span class="todo-percent">${progress.percentage}%</span>
+          </div>
+          <div class="todo-progress-track" aria-hidden="true">
+            <span class="todo-progress-bar" style="width: ${progress.percentage}%"></span>
+          </div>
+          <ol class="todo-list">${items}</ol>
+        </section>
+      `;
+    }
+
+    function updateTodoPanel(todos) {
+      const normalized = normalizeTodos(todos);
+      state.todos = normalized;
+      state.todoProgress = todoProgress(normalized);
+
+      const article = state.assistantArticle || (normalized.length ? ensureAssistant() : null);
+      if (!article) return;
+      const bubble = article.querySelector(".bubble");
+      if (!bubble) return;
+      const existing = bubble.querySelector("[data-todo-panel]");
+      if (existing) existing.remove();
+      if (!normalized.length) {
+        scrollMessages();
+        return;
+      }
+      const reference = bubble.querySelector(".tool-panel") || state.assistantBody;
+      if (reference) {
+        reference.insertAdjacentHTML("beforebegin", todoPanelHtml(normalized));
+      } else {
+        bubble.insertAdjacentHTML("beforeend", todoPanelHtml(normalized));
+      }
       scrollMessages();
     }
 
@@ -8918,9 +9933,9 @@
     }
 
     function setPermissionPolicy(policy) {
-      selectedPermissionPolicy = policy;
+      selectedPermissionPolicy = ["once", "remember", "explain", "plan"].includes(policy) ? policy : "once";
       permissionOptions.forEach((option) => {
-        const isActive = option.dataset.policy === policy;
+        const isActive = option.dataset.policy === selectedPermissionPolicy;
         option.classList.toggle("active", isActive);
         option.setAttribute("aria-checked", String(isActive));
       });
@@ -8928,17 +9943,20 @@
       const noteByPolicy = {
         once: "标准运行会让 Agent 按需调用本地工具。",
         remember: "会提示 Agent 优先只读；涉及写入前先解释。",
-        explain: "会提示 Agent 先说明计划，本轮暂不主动调用工具。"
+        explain: "会提示 Agent 先说明计划，本轮暂不主动调用工具。",
+        plan: "会让 Agent 创建结构化计划，并显示任务进度。"
       };
       const commandByPolicy = {
         once: state.agentMode === "ra3"
           ? "标准运行：按需调用 RA3 Companion 工具。"
           : `标准运行：使用${currentAgentMeta().label}处理任务。`,
         remember: "只读优先：需要写入、复制或运行脚本前先解释。",
-        explain: "先说明计划：本轮先给出人工确认项。"
+        explain: "先说明计划：本轮先给出人工确认项。",
+        plan: "计划模式：创建 todo 计划，不执行写入或高影响操作。"
       };
-      permissionNote.textContent = noteByPolicy[policy];
-      permissionCommand.textContent = commandByPolicy[policy];
+      permissionNote.textContent = noteByPolicy[selectedPermissionPolicy];
+      permissionCommand.textContent = commandByPolicy[selectedPermissionPolicy];
+      sendBtn.textContent = selectedPermissionPolicy === "plan" ? "创建计划" : "发送";
     }
 
     async function ensureDaemon() {
@@ -9066,7 +10084,9 @@
       if (event.type === "run_started") {
         state.runStartedAt = performance.now();
         state.tools = new Map();
-        setAssistantStatus("正在连接 Agent...");
+        state.todos = [];
+        state.todoProgress = null;
+        setAssistantStatus(event.permissionPolicy === "plan" ? "正在创建计划..." : "正在连接 Agent...");
         return;
       }
       if (event.type === "status") {
@@ -9078,8 +10098,21 @@
         runStatusLabel.textContent = "正在生成回复";
         return;
       }
+      if (event.type === "todos_updated") {
+        updateTodoPanel(event.todos || []);
+        const progress = state.todoProgress || todoProgress(state.todos);
+        runStatusLabel.textContent = progress.total
+          ? `任务进度 ${progress.completed}/${progress.total}`
+          : "任务列表已清空";
+        return;
+      }
       if (event.type === "tool_call" || event.type === "tool_result") {
-        upsertTool(event.tool || {});
+        const tool = event.tool || {};
+        if (tool.name === "write_todos") {
+          runStatusLabel.textContent = event.type === "tool_call" ? "正在更新任务" : "任务进度已更新";
+          return;
+        }
+        upsertTool(tool);
         runStatusLabel.textContent = event.type === "tool_call" ? "正在调用工具" : "工具已返回";
         return;
       }
@@ -9099,6 +10132,9 @@
       if (event.type === "done") {
         if (!state.assistantBuffer && event.status === "cancelled") {
           appendAssistantDelta("本轮运行已中止。");
+        }
+        if (Array.isArray(event.todos)) {
+          updateTodoPanel(event.todos);
         }
         if (event.usage) {
           appendRunUsageSummary(event.usage);
@@ -9215,6 +10251,7 @@
         });
         if (!result.ok) throw new Error(result.error || "无法启动 Agent");
         if (result.history) applyHistorySnapshot(result.history);
+        loadContextUsage(true).catch((error) => console.warn("Context usage refresh failed", error));
         state.currentRunId = result.runId;
         schedulePoll(result.runId, true);
       } catch (error) {
@@ -9261,6 +10298,8 @@
 
     document.addEventListener("click", (event) => {
       if (!projectMenuRoot.contains(event.target)) closeProjectMenu();
+      if (contextUsageShell && !contextUsageShell.contains(event.target)) setContextUsageOpen(false);
+      if (panelAddMenu && !panelAddMenu.contains(event.target) && !panelAddTabBtn.contains(event.target)) closePanelAddMenu();
       if (!historyContextMenu.contains(event.target)) closeHistoryContextMenu();
       if (!fileContextMenu.contains(event.target)) closeFileContextMenu();
     });
@@ -9302,6 +10341,7 @@
     });
 
     document.addEventListener("scroll", () => {
+      closePanelAddMenu();
       closeHistoryContextMenu();
       closeFileContextMenu();
     }, true);
@@ -9330,9 +10370,53 @@
         }
       });
     });
+    openTerminalTabBtn.addEventListener("click", openTerminalTab);
+    togglePanelBtn.addEventListener("click", togglePanelVisibility);
+    panelAddTabBtn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (panelAddMenu.hidden) openPanelAddMenu();
+      else closePanelAddMenu();
+    });
+    panelTerminalBtn.addEventListener("click", openTerminalTab);
+    panelAddMenu.addEventListener("click", (event) => {
+      event.stopPropagation();
+    });
+    panelMenuNewTerminal.addEventListener("click", () => {
+      closePanelAddMenu();
+      openTerminalTab();
+    });
+    panelMenuOpenSelectedFile.addEventListener("click", async () => {
+      closePanelAddMenu();
+      if (!state.selectedFilePath || state.selectedFileType !== "file") {
+        setSidebarMode("files");
+        showToast("请先在项目文件中选择文件");
+        return;
+      }
+      await selectProjectItem(state.selectedFilePath, "file");
+    });
+    panelMenuShowFiles.addEventListener("click", () => {
+      closePanelAddMenu();
+      setSidebarMode("files");
+      showToast("从项目文件中选择文件即可打开标签");
+    });
     closePanelBtn.addEventListener("click", hidePanel);
     initPanelWidth();
     initPanelResizer();
+    updatePanelToggleButton();
+
+    terminalRunBtn.addEventListener("click", runActiveTerminalCommand);
+    terminalClearBtn.addEventListener("click", () => {
+      const session = terminalSessionForKey();
+      if (!session) return;
+      session.entries = [{ kind: "meta", text: session.cwd ? `# ${session.cwd}` : "# 当前工作区" }];
+      renderTerminalPane(session.key);
+    });
+    terminalCommandInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        runActiveTerminalCommand();
+      }
+    });
 
     copyResult.addEventListener("click", async () => {
       try {
@@ -9370,6 +10454,27 @@
       }
     });
 
+    contextUsageBtn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const nextOpen = !contextUsageShell.classList.contains("open");
+      setContextUsageOpen(nextOpen);
+      if (nextOpen) {
+        loadContextUsage(true).catch((error) => console.warn("Context usage refresh failed", error));
+      }
+    });
+
+    contextUsageShell.addEventListener("mouseenter", () => {
+      contextUsagePopover.setAttribute("aria-hidden", "false");
+      contextUsageBtn.setAttribute("aria-expanded", "true");
+    });
+
+    contextUsageShell.addEventListener("mouseleave", () => {
+      if (!contextUsageShell.classList.contains("open")) {
+        contextUsagePopover.setAttribute("aria-hidden", "true");
+        contextUsageBtn.setAttribute("aria-expanded", "false");
+      }
+    });
+
     permissionSkip.addEventListener("click", () => {
       closePermissionPopover();
       setPermissionPolicy("once");
@@ -9381,7 +10486,8 @@
       const labelByPolicy = {
         once: "标准运行",
         remember: "只读优先",
-        explain: "先说明计划"
+        explain: "先说明计划",
+        plan: "计划模式"
       };
       closePermissionPopover();
       permissionMenuBtn.textContent = labelByPolicy[selectedPermissionPolicy];
@@ -9400,6 +10506,7 @@
         return;
       }
       promptInput.value = "";
+      scheduleContextUsageRefresh(0);
       startRun(text);
     }
 
@@ -9413,6 +10520,10 @@
         event.preventDefault();
         submitPrompt();
       }
+    });
+
+    promptInput.addEventListener("input", () => {
+      scheduleContextUsageRefresh(420);
     });
 
     newChatBtn.addEventListener("click", async () => {
@@ -9431,10 +10542,11 @@
           // /history/new returns {threadId, history} but no context object;
           // fold the new thread id into the existing context instead.
           if (result.threadId && state.context) {
-            state.context.threadId = result.threadId;
+            setActiveConversationId(result.threadId);
           }
           if (result.history) applyHistorySnapshot(result.history);
           await loadConversationUsage(true).catch((error) => showToast(error.message || String(error)));
+          await loadContextUsage(true);
         }
       }
       resetConversationView();
@@ -9489,6 +10601,14 @@
     closeProjectDialogBtn.addEventListener("click", closeProjectDialog);
     projectDialog.addEventListener("click", (event) => {
       if (event.target === projectDialog) closeProjectDialog();
+    });
+    deleteConfirmDialog.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-delete-choice]");
+      if (button) {
+        closeDeleteConfirmDialog(button.dataset.deleteChoice || "cancel");
+        return;
+      }
+      if (event.target === deleteConfirmDialog) closeDeleteConfirmDialog("cancel");
     });
     projectNameInput.addEventListener("input", syncProjectPathWithName);
     projectPathInput.addEventListener("input", () => {
@@ -9857,6 +10977,7 @@
     setAgentMode(readAgentModePreference(), false);
     setPermissionPolicy("once");
     setUsageDisplayPreference(readUsageDisplayPreference(), false);
+    renderContextUsage();
     renderInterfaceSettings();
     applyProjectsSnapshot(previewProjectsSnapshot());
     const cachedSettings = readSettingsCache();

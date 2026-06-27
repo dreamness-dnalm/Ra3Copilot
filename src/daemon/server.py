@@ -24,6 +24,7 @@ from daemon.api import history as history_api
 from daemon.api import projects as projects_api
 from daemon.api import runs as runs_api
 from daemon.api import settings as settings_api
+from daemon.api import terminal as terminal_api
 from daemon.api import usage as usage_api
 from daemon.locking import HEALTH_PATH, clear_pidfile, get_or_create_token, write_pidfile
 from daemon.qq_bot import qq_bot_service
@@ -81,6 +82,7 @@ def create_app() -> FastAPI:
     app.include_router(history_api.router)
     app.include_router(files_api.router)
     app.include_router(settings_api.router)
+    app.include_router(terminal_api.router)
     app.include_router(usage_api.router)
 
     @app.get(HEALTH_PATH)
