@@ -1,11 +1,11 @@
 """Agent runtime helpers: pure functions ported from DesktopBridge, plus the
 per-mode agent cache and ``ensure_agent``.
 
-The agent cache is keyed by mode and lives for the daemon's lifetime, so the
-(expensive) agent construction and MCP tool handshake happen once. The
-``configurable_model`` middleware re-reads the active model on every call, so
-changing settings does NOT require rebuilding agents — the cache stays valid.
-A settings change just needs to invalidate this cache (see ``reset_agents``).
+The agent cache is keyed by mode, project, and project-local skills, so the
+(expensive) agent construction and MCP tool handshake are reused until needed.
+The ``configurable_model`` middleware re-reads the active model on every call,
+so changing settings does NOT require rebuilding agents. A settings change just
+needs to invalidate this cache (see ``reset_agents``).
 """
 
 from __future__ import annotations
@@ -15,6 +15,7 @@ import threading
 import traceback
 
 from core.agents.ra3_csharp_writer import create_ra3_csharp_writer_agent
+from core.agents.project_skills import project_skills_signature
 from core.agents.universal import create_universal_agent
 from core.runtime_env import load_runtime_env
 
@@ -23,6 +24,10 @@ LOCAL_SKILL_SUMMARY = """当前内置的 agent skill：
 - `ra3_map_csharp`：RA3 地图 C# 编写规范。覆盖新建地图、保存地图、尺寸/边界约定、常用 using、地图命名等。
 - `csharp_runner`：C# 脚本运行规范。用于生成最小可运行脚本、读取/修改地图、处理编译错误和运行错误。
 - `map-analyser`：RA3 地图分析。通过 `analyse_ra3_map` 工具提取出生点、油井、观测站、矿脉及推荐矿场位置。
+
+项目级 skill：
+
+- 当前项目的 `.agent/skills/**/SKILL.md` 会自动加载到 Agent 系统提示中；新增或修改后，下一轮对话会重建该项目的 Agent 缓存。
 
 可用的 RA3 Companion 工具：
 
@@ -41,7 +46,13 @@ LOCAL_SKILL_SUMMARY = """当前内置的 agent skill：
 # ---------------------------------------------------------------------------
 
 def normalize_agent_mode(mode: str | None) -> str:
-    return "universal" if mode == "universal" else "ra3"
+    if mode == "openclaw":
+        return "assistant"
+    return mode if mode in {"ra3", "universal", "assistant"} else "ra3"
+
+
+def normalize_permission_policy(policy: str | None) -> str:
+    return policy if policy in {"once", "remember", "explain", "plan"} else "once"
 
 
 def message_text(message) -> str:
@@ -131,16 +142,29 @@ def local_reply_for_prompt(prompt: str) -> str | None:
 
 
 def prompt_for_policy(prompt: str, policy: str) -> str:
-    if policy == "remember":
+    normalized_policy = normalize_permission_policy(policy)
+    if normalized_policy == "remember":
         return (
             "本轮请优先使用只读方式分析。涉及写入文件、复制地图、运行会修改状态的脚本、"
             "或其他不可逆操作前，先向用户解释计划并等待确认。\n\n用户请求："
             f"{prompt}"
         )
-    if policy == "explain":
+    if normalized_policy == "explain":
         return (
             "本轮先不要调用工具。请先说明你的检查/修改计划、需要用户核对的信息，"
             "以及下一步会调用哪些工具。\n\n用户请求："
+            f"{prompt}"
+        )
+    if normalized_policy == "plan":
+        return (
+            "本轮处于计划模式。你的目标是为用户创建一个可执行计划，而不是直接执行修改。\n"
+            "要求：\n"
+            "1. 必须优先调用 write_todos，创建结构化 todo 计划；每项使用 pending、in_progress 或 completed 状态。\n"
+            "2. 可以使用只读工具收集必要上下文，例如 ls、read_file、glob、grep 或只读分析工具。\n"
+            "3. 不要调用 write_file、edit_file、execute、copy_ra3_map、run_ra3_csharp_script，"
+            "也不要执行会写入文件、运行脚本、复制地图或改变外部状态的工具。\n"
+            "4. 如果信息不足，仍然先创建一个基于当前假设的计划，并在回复中列出需要用户确认的问题。\n"
+            "5. 最终回复只总结计划、风险和建议下一步，不要声称已经完成实际修改。\n\n用户请求："
             f"{prompt}"
         )
     return prompt
@@ -150,43 +174,54 @@ def prompt_for_policy(prompt: str, policy: str) -> str:
 # Agent cache
 # ---------------------------------------------------------------------------
 
-_agents: dict[tuple[str, str], object] = {}
+_agents: dict[tuple[str, str, str], object] = {}
 _agent_lock = threading.Lock()
 
 
 async def ensure_agent(state) -> object:
-    """Return the cached agent for ``(state.agent_mode, state.project_id)``.
+    """Return the cached agent for the active mode, project, and project skills.
 
     The agent's filesystem backend is rooted at the project directory, so the
-    cache is keyed by both mode and project — switching projects builds a fresh
-    agent with a correctly-rooted backend. ``state`` must expose ``agent_mode``,
+    cache is keyed by mode, project, and project-local skills. Switching
+    projects or changing ``.agent/skills`` builds a fresh agent with a
+    correctly-rooted backend. ``state`` must expose ``agent_mode``,
     ``project_id`` and an ``emit(event)`` method for streaming init status.
     """
     from core.user_data.projects import DEFAULT_PROJECT_ID, open_project
 
     agent_mode = normalize_agent_mode(state.agent_mode)
     project_id = state.project_id or DEFAULT_PROJECT_ID
-    cache_key = (agent_mode, project_id)
-
-    cached = _agents.get(cache_key)
-    if cached is not None:
-        return cached
 
     project = open_project(project_id)
     project_path = str(getattr(project, "path", "") or "").strip()
     if not project_path:
         raise RuntimeError(f"工程路径为空：{project_id}")
 
-    label = "万能 Agent" if agent_mode == "universal" else "RA3 Agent"
+    skills_signature = project_skills_signature(project_path)
+    cache_key = (agent_mode, project_id, skills_signature)
+
+    cached = _agents.get(cache_key)
+    if cached is not None:
+        return cached
+
+    label_by_mode = {
+        "ra3": "RA3 Agent",
+        "universal": "万能 Agent",
+        "assistant": "得力助手 Agent",
+    }
+    label = label_by_mode.get(agent_mode, "Agent")
     state.emit({"type": "status", "text": f"正在初始化 {label}..."})
     with _agent_lock:
         needs_init = cache_key not in _agents
     if needs_init:
-        if agent_mode == "universal":
+        if agent_mode in {"universal", "assistant"}:
             agent = await create_universal_agent(project_path)
         else:
             agent = await create_ra3_csharp_writer_agent(project_path)
         with _agent_lock:
+            for key in list(_agents):
+                if key[:2] == cache_key[:2] and key != cache_key:
+                    _agents.pop(key, None)
             _agents[cache_key] = agent
     state.emit({"type": "status", "text": "Agent 已就绪。"})
     return _agents[cache_key]

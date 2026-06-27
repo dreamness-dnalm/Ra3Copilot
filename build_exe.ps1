@@ -23,9 +23,11 @@ try {
         --name Ra3Copilot `
         --collect-submodules pystray `
         --collect-submodules PIL `
+        --hidden-import daemon.__main__ `
+        --hidden-import desktop.app `
         --add-data "desktop/web;desktop/web" `
         --add-data "core/prompts;core/prompts" `
-        desktop\app.py
+        __main__.py
 
     Write-Host "EXE generated at: $(Join-Path $SrcRoot 'dist\Ra3Copilot.exe')"
 }

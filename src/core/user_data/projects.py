@@ -13,6 +13,16 @@ from core.user_data import user_data_path
 PROJECTS_DIR = Path(user_data_path) / "projects"
 PROJECT_INDEX_PATH = Path(user_data_path) / "projects.json"
 DEFAULT_PROJECT_ID = "default"
+PROJECT_ROOT_NAMES = {
+    "map": "maps",
+    "workspace": "workspaces",
+}
+PROJECT_METADATA_FILE = "project.co"
+LEGACY_PROJECT_METADATA_FILE = ".ra3copilot-project.json"
+DEFAULT_AGENTS_MD = """# AGENTS.md
+
+在这里记录当前项目给 Agent 的协作说明、约束和偏好。
+"""
 INVALID_PATH_CHARS = re.compile(r'[\x00-\x1f<>"|?*]')
 RESERVED_PATH_NAMES = {
     "CON",
@@ -70,14 +80,48 @@ def _save_index(index: dict) -> None:
 
 
 def _project_metadata_path(project_path: Path) -> Path:
-    return project_path / ".ra3copilot-project.json"
+    return project_path / PROJECT_METADATA_FILE
+
+
+def has_project_metadata(project_path: str | Path) -> bool:
+    return _project_metadata_path(Path(project_path).expanduser().resolve(strict=False)).is_file()
+
+
+def _ensure_project_agents_file(project_path: Path) -> None:
+    agents_path = project_path / "AGENTS.md"
+    if agents_path.exists():
+        return
+    agents_path.write_text(DEFAULT_AGENTS_MD, encoding="utf-8")
 
 
 def _write_project_metadata(entry: ProjectEntry) -> None:
     project_path = Path(entry.path)
     project_path.mkdir(parents=True, exist_ok=True)
+    _ensure_project_agents_file(project_path)
     with _project_metadata_path(project_path).open("w", encoding="utf-8") as file:
         json.dump(entry.model_dump(), file, ensure_ascii=False, indent=2)
+
+
+def normalize_project_kind(kind: str | None) -> str:
+    value = str(kind or "map").strip().lower()
+    if value in {"assistant", "openclaw", "universal"}:
+        return "workspace"
+    if value in {"default", "map", "workspace"}:
+        return value
+    return "map"
+
+
+def project_root_for_kind(kind: str | None) -> Path:
+    normalized = normalize_project_kind(kind)
+    folder = PROJECT_ROOT_NAMES.get(normalized)
+    return PROJECTS_DIR / folder if folder else PROJECTS_DIR
+
+
+def project_roots() -> dict:
+    return {
+        "ra3": str(project_root_for_kind("map")),
+        "universal": str(project_root_for_kind("workspace")),
+    }
 
 
 def _project_from_dict(value: dict) -> ProjectEntry:
@@ -85,7 +129,7 @@ def _project_from_dict(value: dict) -> ProjectEntry:
         id=str(value.get("id") or ""),
         name=str(value.get("name") or ""),
         path=str(value.get("path") or ""),
-        kind=str(value.get("kind") or "map"),
+        kind=normalize_project_kind(value.get("kind") or "map"),
         created_at=str(value.get("created_at") or ""),
         last_opened_at=str(value.get("last_opened_at") or ""),
         hidden=bool(value.get("hidden", False)),
@@ -134,7 +178,7 @@ def _safe_project_id(name: str) -> str:
     return value[:80]
 
 
-def _assert_valid_path_text(raw_path: str | None) -> Path:
+def _assert_valid_path_text(raw_path: str | None, *, kind: str = "map") -> Path:
     path_text = (raw_path or "").strip().strip('"')
     if not path_text:
         raise ValueError("请选择工程保存目录")
@@ -159,7 +203,7 @@ def _assert_valid_path_text(raw_path: str | None) -> Path:
 
     path = Path(path_text).expanduser()
     if not path.is_absolute():
-        path = PROJECTS_DIR / path
+        path = project_root_for_kind(kind) / path
     return path.resolve(strict=False)
 
 
@@ -172,11 +216,12 @@ def _entry_index_by_path(index: dict, project_path: Path) -> int:
     return -1
 
 
-def _unique_project_id(index: dict, base: str) -> str:
+def _unique_project_id(index: dict, base: str, *, root: Path | None = None) -> str:
     existing = {project.get("id") for project in index.get("projects", [])}
+    project_root = root or PROJECTS_DIR
     project_id = base
     suffix = 2
-    while project_id in existing or (PROJECTS_DIR / project_id).exists():
+    while project_id in existing or (project_root / project_id).exists():
         project_id = f"{base}-{suffix}"
         suffix += 1
     return project_id
@@ -208,12 +253,45 @@ def list_projects(current_project: ProjectEntry | None = None) -> dict:
         current_id = index.get("current_project_id")
         current = next((project for project in projects if project.id == current_id), None)
 
+    visible_projects = [
+        project
+        for project in projects
+        if project.id != DEFAULT_PROJECT_ID and not project.hidden
+    ]
+    im_bound_projects = _im_bound_project_snapshots(visible_projects)
+
     return {
         "projectsDir": str(PROJECTS_DIR),
+        "projectRoots": project_roots(),
         "defaultProject": default_project.model_dump(),
         "currentProject": current.model_dump() if current else None,
         "recentProjects": [project.model_dump() for project in recent_projects],
+        "imBoundProjects": im_bound_projects,
     }
+
+
+def list_all_projects() -> list[ProjectEntry]:
+    index = _load_index()
+    _ensure_default_project(index)
+    _save_index(index)
+    return [_project_from_dict(project) for project in index.get("projects", [])]
+
+
+def _im_bound_project_snapshots(projects: list[ProjectEntry]) -> list[dict]:
+    from core.user_data.workspace_config import get_workspace_config, workspace_im_summary
+
+    snapshots: list[dict] = []
+    for project in projects:
+        try:
+            summary = workspace_im_summary(get_workspace_config(project))
+        except Exception:
+            summary = []
+        if not summary:
+            continue
+        item = project.model_dump()
+        item["imIntegrations"] = summary
+        snapshots.append(item)
+    return snapshots
 
 
 def open_project(project_id: str = DEFAULT_PROJECT_ID) -> ProjectEntry:
@@ -251,6 +329,13 @@ def create_map_project(name: str | None = None) -> ProjectEntry:
     return create_map_project_at(name=name, project_path=None)
 
 
+def _project_kind_label(kind: str) -> str:
+    kind = normalize_project_kind(kind)
+    if kind == "workspace":
+        return "工作区"
+    return "地图工程"
+
+
 def _create_project_at(
     name: str | None = None,
     project_path: str | None = None,
@@ -259,19 +344,21 @@ def _create_project_at(
 ) -> ProjectEntry:
     index = _load_index()
     _ensure_default_project(index)
-    default_prefix = "工作区" if kind == "workspace" else "地图工程"
+    kind = normalize_project_kind(kind)
+    project_root = project_root_for_kind(kind)
+    default_prefix = _project_kind_label(kind)
     project_name = _normalize_project_name(name, default_prefix)
     if project_path:
-        target_path = _assert_valid_path_text(project_path)
+        target_path = _assert_valid_path_text(project_path, kind=kind)
         if _entry_index_by_path(index, target_path) >= 0:
             raise ValueError("该目录已经在工程列表中")
         _assert_new_project_directory(target_path)
     else:
-        project_id_for_path = _unique_project_id(index, _safe_project_id(project_name))
-        target_path = PROJECTS_DIR / project_id_for_path
+        project_id_for_path = _unique_project_id(index, _safe_project_id(project_name), root=project_root)
+        target_path = project_root / project_id_for_path
         _assert_new_project_directory(target_path)
 
-    project_id = _unique_project_id(index, _safe_project_id(project_name))
+    project_id = _unique_project_id(index, _safe_project_id(project_name), root=project_root)
     now = _now_iso()
     entry = ProjectEntry(
         id=project_id,
@@ -297,6 +384,14 @@ def create_workspace_project_at(name: str | None = None, project_path: str | Non
     return _create_project_at(name=name, project_path=project_path, kind="workspace")
 
 
+def create_assistant_project_at(name: str | None = None, project_path: str | None = None) -> ProjectEntry:
+    return create_workspace_project_at(name=name, project_path=project_path)
+
+
+def create_openclaw_project_at(name: str | None = None, project_path: str | None = None) -> ProjectEntry:
+    return create_assistant_project_at(name=name, project_path=project_path)
+
+
 def open_map_project_from_file(map_file_path: str) -> ProjectEntry:
     map_file = Path(map_file_path).expanduser().resolve(strict=False)
     if map_file.suffix.lower() != ".mp":
@@ -315,7 +410,7 @@ def open_map_project_from_file(map_file_path: str) -> ProjectEntry:
             id=current.id,
             name=current.name or project_path.name or map_file.stem,
             path=str(project_path),
-            kind=current.kind or "map",
+            kind="map",
             created_at=current.created_at or now,
             last_opened_at=now,
             hidden=False,
@@ -366,9 +461,33 @@ def open_map_project_from_directory(project_directory: str) -> ProjectEntry:
 
 
 def open_workspace_project_from_directory(project_directory: str) -> ProjectEntry:
+    return _open_directory_project_from_directory(
+        project_directory,
+        kind="workspace",
+        kind_label="工作区",
+        missing_message="请选择工作区文件夹",
+    )
+
+
+def open_assistant_project_from_directory(project_directory: str) -> ProjectEntry:
+    return open_workspace_project_from_directory(project_directory)
+
+
+def open_openclaw_project_from_directory(project_directory: str) -> ProjectEntry:
+    return open_assistant_project_from_directory(project_directory)
+
+
+def _open_directory_project_from_directory(
+    project_directory: str,
+    *,
+    kind: str,
+    kind_label: str,
+    missing_message: str,
+) -> ProjectEntry:
+    kind = normalize_project_kind(kind)
     project_path = Path(project_directory).expanduser().resolve(strict=False)
     if not project_path.exists() or not project_path.is_dir():
-        raise ValueError("请选择工作区文件夹")
+        raise ValueError(missing_message)
 
     index = _load_index()
     _ensure_default_project(index)
@@ -378,24 +497,24 @@ def open_workspace_project_from_directory(project_directory: str) -> ProjectEntr
         current = _project_from_dict(index["projects"][idx])
         entry = ProjectEntry(
             id=current.id,
-            name=current.name or project_path.name or "工作区",
+            name=current.name or project_path.name or kind_label,
             path=str(project_path),
-            kind=current.kind or "workspace",
+            kind=kind,
             created_at=current.created_at or now,
             last_opened_at=now,
             hidden=False,
         )
         index["projects"][idx] = entry.model_dump()
     else:
-        project_name = project_path.name or "工作区"
+        project_name = project_path.name or kind_label
         project_id = _unique_project_id(
-            index, _safe_project_id(project_name) or f"workspace-{uuid4().hex[:8]}"
+            index, _safe_project_id(project_name) or f"{kind}-{uuid4().hex[:8]}"
         )
         entry = ProjectEntry(
             id=project_id,
             name=project_name,
             path=str(project_path),
-            kind="workspace",
+            kind=kind,
             created_at=now,
             last_opened_at=now,
             hidden=False,

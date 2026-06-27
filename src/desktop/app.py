@@ -20,7 +20,7 @@ import webview
 from webview.window import FixPoint
 
 from core.runtime_env import load_runtime_env
-from daemon.locking import DEFAULT_DAEMON_PORT
+from daemon.locking import DEFAULT_DAEMON_PORT, get_or_create_token
 from desktop.daemon_client import DaemonNotReadyError, ensure_daemon
 
 APP_TITLE = "Ra3Copilot"
@@ -42,6 +42,7 @@ class DesktopBridge:
         self._window = None
         self._is_maximized = False
         self.daemon_base_url: str = ""
+        self.daemon_token: str = get_or_create_token()
         self.daemon_error: str | None = None
 
     def bind_window(self, window) -> None:
@@ -55,12 +56,22 @@ class DesktopBridge:
         The frontend polls this on boot until ``ready`` is true.
         """
         if self.daemon_base_url:
-            return {"ok": True, "ready": True, "baseUrl": self.daemon_base_url}
-        if self.daemon_error:
-            return {"ok": False, "ready": False, "error": self.daemon_error}
+            return {
+                "ok": True,
+                "ready": True,
+                "baseUrl": self.daemon_base_url,
+                "token": self.daemon_token,
+            }
         try:
             self.daemon_base_url = ensure_daemon(DEFAULT_DAEMON_PORT)
-            return {"ok": True, "ready": True, "baseUrl": self.daemon_base_url}
+            self.daemon_token = get_or_create_token()
+            self.daemon_error = None
+            return {
+                "ok": True,
+                "ready": True,
+                "baseUrl": self.daemon_base_url,
+                "token": self.daemon_token,
+            }
         except DaemonNotReadyError as exc:
             self.daemon_error = str(exc)
             return {"ok": False, "ready": False, "error": self.daemon_error}
@@ -95,6 +106,16 @@ class DesktopBridge:
 
     def close_window(self) -> dict:
         return self._window_action("close")
+
+    def set_window_title(self, title: str) -> dict:
+        if self._window is None:
+            return {"ok": False, "error": "窗口尚未就绪。"}
+        try:
+            next_title = str(title or APP_TITLE).strip() or APP_TITLE
+            self._window.set_title(next_title)
+            return {"ok": True}
+        except Exception as exc:
+            return {"ok": False, "error": str(exc)}
 
     def resize_window_by(self, edge: str, delta_x: int | float = 0, delta_y: int | float = 0) -> dict:
         if self._window is None:
@@ -225,6 +246,14 @@ def run(debug: bool = False) -> None:
     webview.settings["DRAG_REGION_DIRECT_TARGET_ONLY"] = True
 
     bridge = DesktopBridge()
+    try:
+        bridge.daemon_base_url = ensure_daemon(DEFAULT_DAEMON_PORT)
+        bridge.daemon_token = get_or_create_token()
+    except DaemonNotReadyError as exc:
+        # Still show the shell so the frontend can surface the startup error and
+        # retry through get_daemon_info() if the daemon becomes available later.
+        bridge.daemon_error = str(exc)
+
     window = webview.create_window(
         APP_TITLE,
         index_path.as_uri(),

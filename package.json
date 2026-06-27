@@ -1,0 +1,23 @@
+{
+  "name": "ra3copilot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dreamness-dnalm/Ra3Copilot.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dreamness-dnalm/Ra3Copilot/issues"
+  },
+  "homepage": "https://github.com/dreamness-dnalm/Ra3Copilot#readme",
+  "description": "",
+  "devDependencies": {
+    "playwright": "^1.61.1"
+  }
+}

@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Ra3Copilot 工作台</title>
+  <link rel="stylesheet" href="./vendor/codemirror/codemirror.css" />
   <style>
     :root {
       --bg: oklch(98.7% 0.004 86);
@@ -323,28 +324,28 @@
       min-height: 0;
       overflow: hidden;
       display: grid;
-      grid-template-columns: 272px minmax(640px, 1fr);
+      grid-template-columns: 272px minmax(0, 1fr) auto;
       background: var(--surface);
     }
 
+    /* Panel hidden: collapse the third column to 0. */
+    .workspace.panel-hidden {
+      grid-template-columns: 272px minmax(0, 1fr) 0px;
+    }
+
+    .workspace.settings-mode,
     .workspace.welcome-mode {
       grid-template-columns: minmax(0, 1fr);
     }
 
+    .workspace.settings-mode .sidebar,
     .workspace.welcome-mode .sidebar {
       display: none;
     }
 
-    .workspace:has(.drawer.closed) {
-      grid-template-columns: 272px minmax(640px, 1fr);
-    }
-
-    .workspace.welcome-mode:has(.drawer.closed) {
-      grid-template-columns: minmax(0, 1fr);
-    }
-
-    .workspace:has(.drawer.closed) .chat-pane {
-      border-right-color: transparent;
+    .workspace.settings-mode .side-panel,
+    .workspace.welcome-mode .side-panel {
+      display: none;
     }
 
     .sidebar {
@@ -800,11 +801,45 @@
       line-height: 1.65;
     }
 
+    .welcome-section {
+      margin-top: 30px;
+    }
+
+    .welcome-section-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+
+    .welcome-section-head h2 {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.3;
+    }
+
+    .welcome-section-head span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
     .agent-choice-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 14px;
       margin-top: 34px;
+    }
+
+    .agent-choice-grid.scenario-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 0;
+    }
+
+    .agent-choice-grid.scenario-grid .agent-choice {
+      min-height: 208px;
+      padding: 20px;
+      border-radius: 12px;
     }
 
     .agent-choice {
@@ -1198,6 +1233,11 @@
       display: none;
     }
 
+    .settings-section[hidden],
+    .settings-row[hidden] {
+      display: none;
+    }
+
     .settings-title {
       margin: 0 0 34px;
     }
@@ -1279,6 +1319,7 @@
     }
 
     .settings-input,
+    .settings-textarea,
     .settings-select {
       width: 100%;
       min-height: 34px;
@@ -1291,9 +1332,17 @@
     }
 
     .settings-input:focus,
+    .settings-textarea:focus,
     .settings-select:focus {
       border-color: color-mix(in oklch, var(--accent) 50%, var(--border));
       background: var(--surface);
+    }
+
+    .settings-textarea {
+      min-height: 168px;
+      padding: 10px;
+      resize: vertical;
+      font: 12px/1.6 var(--font-mono);
     }
 
     .settings-input[type="password"] {
@@ -1388,6 +1437,71 @@
 
     .settings-actions.left {
       justify-content: flex-start;
+    }
+
+    .settings-footer-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .qq-bot-binding {
+      display: grid;
+      gap: 12px;
+      padding: 16px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .qq-bot-binding-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 12px;
+    }
+
+    .qq-bot-binding-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .qq-bot-binding-title {
+      display: grid;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .qq-bot-binding-title strong {
+      font-size: 13px;
+    }
+
+    .qq-bot-binding-title span,
+    .qq-bot-status {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .soul-editor-grid {
+      display: grid;
+      grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .soul-init-options {
+      display: grid;
+      gap: 10px;
+    }
+
+    .soul-init-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
     }
 
     .settings-toolbar {
@@ -1676,6 +1790,32 @@
       padding: 14px;
     }
 
+    .delete-dialog {
+      width: min(520px, 100%);
+    }
+
+    .delete-dialog-copy {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 14px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .delete-dialog-copy strong {
+      color: var(--fg);
+      font-size: 14px;
+      overflow-wrap: anywhere;
+    }
+
+    .delete-dialog-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
     .chat-header {
       display: flex;
       align-items: center;
@@ -1718,6 +1858,81 @@
       color: var(--muted);
       font-size: 12px;
       white-space: nowrap;
+    }
+
+    .chat-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .panel-action-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: color-mix(in oklch, var(--surface-2) 70%, var(--surface));
+    }
+
+    .panel-action-btn {
+      width: 28px;
+      height: 28px;
+      display: inline-grid;
+      place-items: center;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--muted);
+      font: 700 13px/1 var(--font-mono);
+    }
+
+    .panel-action-btn:hover,
+    .panel-action-btn.active {
+      background: var(--surface);
+      color: var(--fg);
+      box-shadow: inset 0 0 0 1px var(--border);
+    }
+
+    .panel-toggle-icon {
+      position: relative;
+      display: block;
+      width: 17px;
+      height: 15px;
+      border: 1.5px solid currentColor;
+      border-radius: 4px;
+    }
+
+    .panel-toggle-icon::before {
+      content: "";
+      position: absolute;
+      top: 2px;
+      right: 4px;
+      bottom: 2px;
+      width: 1.5px;
+      border-radius: 999px;
+      background: currentColor;
+    }
+
+    .panel-toggle-icon::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      right: -4px;
+      width: 6px;
+      height: 6px;
+      border-top: 1.5px solid currentColor;
+      border-right: 1.5px solid currentColor;
+      transform: translateY(-50%) rotate(45deg);
+      transform-origin: center;
+    }
+
+    .panel-action-btn.panel-hidden-state .panel-toggle-icon::after {
+      right: auto;
+      left: -4px;
+      transform: translateY(-50%) rotate(225deg);
     }
 
     .messages {
@@ -1904,6 +2119,130 @@
     .status-line {
       color: var(--muted);
       font-size: 13px;
+    }
+
+    .todo-panel {
+      margin: 0 0 14px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: color-mix(in oklch, var(--surface-2) 58%, var(--surface));
+    }
+
+    .todo-panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 10px;
+    }
+
+    .todo-panel-title {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .todo-panel-title strong {
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .todo-panel-title span,
+    .todo-status {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .todo-percent {
+      flex: 0 0 auto;
+      color: var(--accent);
+      font-weight: 720;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .todo-progress-track {
+      height: 6px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: var(--surface-3);
+    }
+
+    .todo-progress-bar {
+      display: block;
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width .18s ease;
+    }
+
+    .todo-list {
+      display: grid;
+      gap: 7px;
+      margin: 10px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .todo-item {
+      display: grid;
+      grid-template-columns: 18px minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: start;
+      min-width: 0;
+    }
+
+    .todo-check {
+      width: 14px;
+      height: 14px;
+      margin-top: 2px;
+      display: inline-grid;
+      place-items: center;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--surface);
+    }
+
+    .todo-check::after {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 2px;
+      background: transparent;
+    }
+
+    .todo-item[data-status="completed"] .todo-check {
+      border-color: color-mix(in oklch, var(--success) 68%, var(--border));
+      background: color-mix(in oklch, var(--success) 16%, var(--surface));
+    }
+
+    .todo-item[data-status="completed"] .todo-check::after {
+      background: var(--success);
+    }
+
+    .todo-item[data-status="in_progress"] .todo-check {
+      border-color: color-mix(in oklch, var(--accent) 70%, var(--border));
+      background: color-mix(in oklch, var(--accent) 12%, var(--surface));
+    }
+
+    .todo-item[data-status="in_progress"] .todo-check::after {
+      background: var(--accent);
+    }
+
+    .todo-text {
+      min-width: 0;
+      overflow-wrap: anywhere;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .todo-item[data-status="completed"] .todo-text {
+      color: var(--muted);
+      text-decoration: line-through;
+      text-decoration-thickness: 1px;
     }
 
     code {
@@ -2267,6 +2606,174 @@
       white-space: nowrap;
     }
 
+    .context-usage-shell {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      flex: 0 0 auto;
+    }
+
+    .context-usage-btn {
+      min-width: 32px;
+      min-height: 28px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 0 9px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .context-usage-btn:hover,
+    .context-usage-btn:focus-visible,
+    .context-usage-shell.open .context-usage-btn {
+      background: var(--surface-2);
+      border-color: color-mix(in oklch, var(--border) 70%, var(--accent));
+      color: var(--fg);
+    }
+
+    .context-usage-ring {
+      --context-used: 0deg;
+      --context-color: var(--muted);
+      width: 15px;
+      height: 15px;
+      position: relative;
+      display: inline-block;
+      flex: 0 0 auto;
+      border-radius: 999px;
+      background:
+        conic-gradient(var(--context-color) var(--context-used), color-mix(in oklch, var(--border) 78%, transparent) 0);
+    }
+
+    .context-usage-ring::after {
+      content: "";
+      position: absolute;
+      inset: 4px;
+      border-radius: inherit;
+      background: var(--surface);
+    }
+
+    .context-usage-btn:hover .context-usage-ring::after,
+    .context-usage-btn:focus-visible .context-usage-ring::after,
+    .context-usage-shell.open .context-usage-ring::after {
+      background: var(--surface-2);
+    }
+
+    .context-usage-label {
+      max-width: 88px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .context-usage-popover {
+      width: 288px;
+      position: absolute;
+      right: 0;
+      bottom: calc(100% + 84px);
+      z-index: 35;
+      max-height: min(420px, calc(100vh - 210px));
+      overflow: auto;
+      padding: 13px 13px 12px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: color-mix(in oklch, var(--surface) 96%, white);
+      box-shadow: 0 18px 42px color-mix(in oklch, var(--fg) 12%, transparent);
+      opacity: 0;
+      transform: translateY(4px);
+      pointer-events: none;
+      transition: opacity .14s ease, transform .14s ease;
+    }
+
+    .context-usage-shell:hover .context-usage-popover,
+    .context-usage-shell:focus-within .context-usage-popover,
+    .context-usage-shell.open .context-usage-popover {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .context-usage-title {
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+      line-height: 1.35;
+    }
+
+    .context-usage-percent {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+    }
+
+    .context-usage-percent strong {
+      color: var(--fg);
+      font-size: 14px;
+    }
+
+    .context-usage-total {
+      margin-top: 3px;
+      color: var(--fg);
+      font-size: 13px;
+      text-align: center;
+    }
+
+    .context-usage-meta {
+      margin-top: 4px;
+      color: var(--muted);
+      font: 600 11px/1.3 var(--font-mono);
+      text-align: center;
+    }
+
+    .context-section-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .context-section-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .context-section-row strong {
+      min-width: 0;
+      overflow: hidden;
+      color: var(--fg);
+      font-size: 12px;
+      font-weight: 600;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .context-section-row span {
+      font: 600 11px/1 var(--font-mono);
+      white-space: nowrap;
+    }
+
+    .context-section-bar {
+      grid-column: 1 / -1;
+      height: 5px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: color-mix(in oklch, var(--border) 62%, transparent);
+    }
+
+    .context-section-fill {
+      width: var(--section-width, 0%);
+      height: 100%;
+      border-radius: inherit;
+      background: var(--section-color, var(--accent));
+    }
+
     .model-switcher {
       max-width: 260px;
       min-width: 0;
@@ -2306,31 +2813,124 @@
       border-color: color-mix(in oklch, var(--border) 70%, var(--accent));
     }
 
-    .drawer {
-      position: absolute;
-      top: 54px;
-      right: 16px;
-      width: min(318px, calc(100% - 304px));
-      max-height: calc(100% - 72px);
-      min-width: 292px;
+    /* Right side panel: a normal grid column (not floating). Hidden by default. */
+    .side-panel {
+      position: relative;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
+      width: var(--panel-width, 460px);
       display: flex;
       flex-direction: column;
-      padding: 0;
-      background: transparent;
-      border-radius: 18px;
-      box-shadow: var(--shadow);
+      border-left: 1px solid var(--border);
+      background: var(--surface);
       overflow: hidden;
-      z-index: 8;
     }
 
-    .drawer.closed {
+    .workspace.panel-hidden .side-panel {
       display: none;
     }
 
-    .drawer[data-mode="file"] {
-      width: min(680px, calc(100% - 376px));
-      min-width: min(560px, calc(100% - 48px));
+    /* Left-edge drag handle to resize the panel. */
+    .panel-resizer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 5px;
+      height: 100%;
+      cursor: col-resize;
+      z-index: 5;
     }
+    .panel-resizer:hover,
+    .panel-resizer.dragging {
+      background: color-mix(in oklch, var(--accent) 35%, transparent);
+    }
+
+    .panel-tabs {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      min-height: 38px;
+      padding: 6px 6px 0 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-2);
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }
+    .panel-tabs::-webkit-scrollbar { height: 4px; }
+
+    .panel-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      max-width: 180px;
+      padding: 6px 8px 6px 12px;
+      border: 1px solid transparent;
+      border-bottom: 0;
+      border-radius: 8px 8px 0 0;
+      background: transparent;
+      color: var(--muted);
+      font: 600 12px/1 var(--font-mono);
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .panel-tab .panel-tab-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .panel-tab.active {
+      background: var(--surface);
+      border-color: var(--border);
+      color: var(--fg);
+    }
+    .panel-tab .panel-tab-close {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1;
+      padding: 0 2px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .panel-tab .panel-tab-close:hover { color: var(--danger); background: var(--surface-3); }
+    .panel-tab.dirty .panel-tab-label::before { content: "• "; color: var(--warn); }
+
+    .panel-toolbar {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding-right: 4px;
+    }
+    .panel-toolbar button {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1;
+      padding: 4px 6px;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+    .panel-toolbar button:hover { background: var(--surface-3); color: var(--fg); }
+
+    .panel-content {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .panel-tab-pane {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .panel-tab-pane.hidden { display: none; }
 
     .drawer-header {
       min-width: 0;
@@ -2339,9 +2939,7 @@
       justify-content: space-between;
       gap: 10px;
       padding: 12px 14px;
-      border: 1px solid var(--border);
-      border-bottom: 0;
-      border-radius: 16px 16px 0 0;
+      border-bottom: 1px solid var(--border);
       background: var(--surface);
     }
 
@@ -2450,8 +3048,98 @@
     }
 
     .file-detail-view.hidden,
+    .terminal-detail-view.hidden,
     .detail-stack.hidden {
       display: none;
+    }
+
+    .terminal-detail-view {
+      display: grid;
+      grid-template-rows: auto minmax(240px, 1fr) auto;
+      min-height: 0;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 0 0 16px 16px;
+      background: var(--surface);
+    }
+
+    .terminal-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 11px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .terminal-title {
+      min-width: 0;
+      display: grid;
+      gap: 3px;
+    }
+
+    .terminal-title strong {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font: 700 13px/1.2 var(--font-mono);
+    }
+
+    .terminal-title span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--muted);
+      font: 600 11px/1.2 var(--font-mono);
+    }
+
+    .terminal-output {
+      min-height: 0;
+      overflow: auto;
+      padding: 11px;
+      background: oklch(21% 0.015 250);
+      color: oklch(92% 0.02 145);
+      font: 12px/1.5 var(--font-mono);
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .terminal-output .terminal-muted {
+      color: oklch(72% 0.025 245);
+    }
+
+    .terminal-output .terminal-error {
+      color: oklch(82% 0.16 25);
+    }
+
+    .terminal-output .terminal-success {
+      color: oklch(82% 0.13 145);
+    }
+
+    .terminal-command-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      padding: 9px 11px 11px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .terminal-command-input {
+      width: 100%;
+      min-height: 30px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0 10px;
+      background: var(--surface-2);
+      color: var(--fg);
+      font: 12px/1.2 var(--font-mono);
+    }
+
+    .terminal-command-input:focus {
+      outline: 0;
+      border-color: color-mix(in oklch, var(--accent) 50%, var(--border));
     }
 
     .file-editor-meta {
@@ -2513,6 +3201,10 @@
       min-height: 0;
       overflow: hidden;
       background: var(--surface-2);
+      --file-code-padding: 12px;
+      --file-code-font-size: 12px;
+      --file-code-line-height: 18px;
+      --file-code-font-family: var(--font-mono);
     }
 
     .file-code-preview,
@@ -2529,15 +3221,23 @@
     }
 
     .file-code-preview {
-      font: 12px/1.55 var(--font-mono);
+      font-family: var(--file-code-font-family);
+      font-size: var(--file-code-font-size);
+      line-height: var(--file-code-line-height);
       tab-size: 2;
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
+      white-space: pre;
+      overflow-wrap: normal;
+      word-break: normal;
+      font-variant-ligatures: none;
+      font-feature-settings: "liga" 0, "calt" 0;
+      font-kerning: none;
+      font-synthesis: none;
+      text-rendering: auto;
     }
 
     .file-code-preview code {
       display: block;
-      min-width: 0;
+      min-width: max-content;
       white-space: inherit;
     }
 
@@ -2649,59 +3349,211 @@
       background: var(--surface-2);
     }
 
-    .file-editor-highlight,
-    .file-editor {
+    .file-editor,
+    .file-editor-shell .CodeMirror {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
       min-height: 260px;
       margin: 0;
-      padding: 12px;
+      padding: var(--file-code-padding);
       border: 0;
-      font: 12px/1.55 var(--font-mono);
+      font-family: var(--file-code-font-family);
+      font-size: var(--file-code-font-size);
+      line-height: var(--file-code-line-height);
       tab-size: 2;
       white-space: pre;
+      overflow-wrap: normal;
+      word-break: normal;
+      letter-spacing: 0;
+      font-variant-ligatures: none;
+      font-feature-settings: "liga" 0, "calt" 0;
+      font-kerning: none;
+      font-synthesis: none;
+      text-rendering: auto;
     }
-
-    .file-editor-highlight {
-      overflow: auto;
-      pointer-events: none;
-      background: var(--surface-2);
-      color: var(--fg);
-    }
-
-    .file-editor-highlight code {
-      display: block;
-      min-width: max-content;
-      white-space: pre;
-    }
-
-    .tok-comment { color: color-mix(in oklch, var(--muted) 82%, var(--surface)); }
-    .tok-keyword { color: color-mix(in oklch, var(--accent) 84%, var(--fg)); font-weight: 650; }
-    .tok-string { color: color-mix(in oklch, var(--success) 76%, var(--fg)); }
-    .tok-number { color: color-mix(in oklch, var(--warn) 82%, var(--fg)); }
-    .tok-bool { color: color-mix(in oklch, var(--danger) 78%, var(--fg)); }
-    .tok-tag { color: color-mix(in oklch, var(--accent) 78%, var(--fg)); }
-    .tok-attr { color: color-mix(in oklch, var(--accent-2) 78%, var(--fg)); }
-    .tok-punctuation { color: var(--muted); }
-    .tok-heading { color: var(--fg); font-weight: 700; }
-    .tok-meta { color: color-mix(in oklch, var(--accent-2) 74%, var(--fg)); }
 
     .file-editor {
-      z-index: 1;
       resize: none;
       outline: 0;
       overflow: auto;
-      background: transparent;
-      color: transparent;
-      caret-color: var(--fg);
+      background: var(--surface-2);
+      color: var(--code-fg);
     }
 
-    .file-editor::selection {
-      background: color-mix(in oklch, var(--accent) 20%, transparent);
-      color: transparent;
+    .file-editor-shell .CodeMirror {
+      padding: 0;
+      background: var(--surface-2);
+      color: var(--code-fg);
     }
+
+    .file-editor-shell .CodeMirror-scroll {
+      min-height: 260px;
+    }
+
+    .file-editor-shell .CodeMirror-lines {
+      padding: var(--file-code-padding) 0;
+    }
+
+    .file-editor-shell .CodeMirror pre.CodeMirror-line,
+    .file-editor-shell .CodeMirror pre.CodeMirror-line-like {
+      padding: 0 var(--file-code-padding);
+      font-family: var(--file-code-font-family);
+      font-size: var(--file-code-font-size);
+      line-height: var(--file-code-line-height);
+      letter-spacing: 0;
+      font-variant-ligatures: none;
+      font-feature-settings: "liga" 0, "calt" 0;
+      font-kerning: none;
+      font-synthesis: none;
+    }
+
+    .file-editor-shell .CodeMirror-cursor {
+      border-left: 1px solid var(--fg);
+    }
+
+    .file-editor-shell .CodeMirror-selected,
+    .file-editor-shell .CodeMirror-focused .CodeMirror-selected {
+      background: color-mix(in oklch, var(--accent) 20%, transparent);
+    }
+
+    .file-editor-shell .CodeMirror-gutters {
+      background: var(--surface-2);
+      border-right: 1px solid var(--border);
+    }
+
+    .file-code-preview [class^="tok-"],
+    .file-code-preview [class*=" tok-"],
+    .file-code-preview [class^="hljs-"],
+    .file-code-preview [class*=" hljs-"],
+    .message-body pre code [class^="hljs-"],
+    .message-body pre code [class*=" hljs-"],
+    .file-markdown-preview pre code [class^="hljs-"],
+    .file-markdown-preview pre code [class*=" hljs-"] {
+      font-weight: inherit;
+      font-style: inherit;
+      text-decoration: none;
+    }
+
+    body[data-code-highlight-theme="vivid"] {
+      --code-fg: var(--fg);
+      --code-comment: oklch(47% 0.045 245);
+      --code-keyword: oklch(46% 0.24 292);
+      --code-string: oklch(43% 0.18 150);
+      --code-number: oklch(52% 0.19 64);
+      --code-literal: oklch(49% 0.22 18);
+      --code-title: oklch(42% 0.16 238);
+      --code-attr: oklch(44% 0.17 194);
+      --code-punctuation: oklch(43% 0.03 245);
+      --code-meta: oklch(48% 0.20 318);
+    }
+
+    body,
+    body[data-code-highlight-theme="github"] {
+      --code-fg: oklch(28% 0.018 250);
+      --code-comment: oklch(52% 0.032 248);
+      --code-keyword: oklch(42% 0.16 318);
+      --code-string: oklch(42% 0.16 26);
+      --code-number: oklch(43% 0.15 261);
+      --code-literal: oklch(43% 0.15 261);
+      --code-title: oklch(39% 0.14 150);
+      --code-attr: oklch(39% 0.14 150);
+      --code-punctuation: oklch(35% 0.02 250);
+      --code-meta: oklch(47% 0.17 64);
+    }
+
+    body[data-code-highlight-theme="monokai"] {
+      --code-fg: oklch(30% 0.02 95);
+      --code-comment: oklch(53% 0.035 92);
+      --code-keyword: oklch(56% 0.24 352);
+      --code-string: oklch(58% 0.16 124);
+      --code-number: oklch(57% 0.17 280);
+      --code-literal: oklch(60% 0.18 30);
+      --code-title: oklch(55% 0.18 75);
+      --code-attr: oklch(51% 0.14 205);
+      --code-punctuation: oklch(42% 0.03 95);
+      --code-meta: oklch(52% 0.19 50);
+    }
+
+    body[data-code-highlight-theme="nord"] {
+      --code-fg: oklch(32% 0.025 245);
+      --code-comment: oklch(55% 0.035 245);
+      --code-keyword: oklch(49% 0.12 286);
+      --code-string: oklch(47% 0.10 165);
+      --code-number: oklch(52% 0.13 45);
+      --code-literal: oklch(50% 0.12 25);
+      --code-title: oklch(47% 0.12 225);
+      --code-attr: oklch(45% 0.10 195);
+      --code-punctuation: oklch(42% 0.025 245);
+      --code-meta: oklch(46% 0.12 292);
+    }
+
+    .file-code-preview .hljs,
+    .file-markdown-preview pre code.hljs,
+    .message-body pre code.hljs {
+      background: transparent;
+      color: var(--code-fg);
+    }
+
+    .tok-comment,
+    .cm-comment,
+    .hljs-comment,
+    .hljs-quote { color: var(--code-comment); }
+    .tok-keyword,
+    .cm-keyword,
+    .hljs-keyword,
+    .hljs-selector-tag,
+    .hljs-subst { color: var(--code-keyword); }
+    .tok-string,
+    .cm-string,
+    .cm-string-2,
+    .hljs-string,
+    .hljs-regexp,
+    .hljs-symbol,
+    .hljs-bullet { color: var(--code-string); }
+    .tok-number,
+    .cm-number,
+    .hljs-number { color: var(--code-number); }
+    .tok-bool,
+    .cm-atom,
+    .hljs-literal { color: var(--code-literal); }
+    .tok-tag,
+    .cm-tag,
+    .cm-def,
+    .hljs-name,
+    .hljs-title,
+    .hljs-section { color: var(--code-title); }
+    .tok-attr,
+    .cm-attribute,
+    .cm-property,
+    .cm-variable,
+    .cm-variable-2,
+    .cm-variable-3,
+    .hljs-attr,
+    .hljs-attribute,
+    .hljs-variable,
+    .hljs-template-variable { color: var(--code-attr); }
+    .tok-punctuation,
+    .cm-punctuation,
+    .cm-operator,
+    .cm-bracket,
+    .hljs-punctuation,
+    .hljs-operator { color: var(--code-punctuation); }
+    .tok-heading,
+    .cm-header,
+    .cm-builtin,
+    .cm-type,
+    .hljs-built_in,
+    .hljs-type,
+    .hljs-class .hljs-title { color: var(--code-title); }
+    .tok-meta,
+    .cm-meta,
+    .cm-link,
+    .hljs-meta,
+    .hljs-doctag,
+    .hljs-selector-id,
+    .hljs-selector-class { color: var(--code-meta); }
 
     .file-editor[readonly] {
       cursor: default;
@@ -2801,12 +3653,17 @@
         padding: 64px 0 56px;
       }
 
+      .agent-choice-grid.scenario-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
       .settings-row {
         grid-template-columns: minmax(0, 1fr);
         gap: 10px;
       }
 
       .model-price-grid,
+      .soul-editor-grid,
       .usage-summary-grid {
         grid-template-columns: minmax(0, 1fr);
       }
@@ -2814,18 +3671,6 @@
       .settings-control,
       .settings-actions {
         justify-content: flex-start;
-      }
-
-      .drawer {
-        top: 58px;
-        right: 16px;
-        bottom: 16px;
-        width: min(330px, calc(100vw - 32px));
-        padding: 0;
-        border: 0;
-        border-radius: 16px;
-        box-shadow: var(--shadow);
-        z-index: 10;
       }
     }
 
@@ -2837,11 +3682,23 @@
       .settings-pane { grid-template-columns: 210px 1fr; }
       .welcome-shell { width: calc(100% - 40px); }
       .agent-choice-grid { grid-template-columns: minmax(0, 1fr); }
+      .agent-choice-grid.scenario-grid { grid-template-columns: minmax(0, 1fr); }
       .welcome-actions { grid-template-columns: minmax(0, 1fr); }
       .welcome-detail-head { flex-direction: column; }
     }
   </style>
   <script src="./vendor/markdown-it.min.js"></script>
+  <script src="./vendor/highlight.min.js"></script>
+  <script src="./vendor/codemirror/codemirror.js"></script>
+  <script src="./vendor/codemirror/mode/xml.js"></script>
+  <script src="./vendor/codemirror/mode/javascript.js"></script>
+  <script src="./vendor/codemirror/mode/css.js"></script>
+  <script src="./vendor/codemirror/mode/htmlmixed.js"></script>
+  <script src="./vendor/codemirror/mode/markdown.js"></script>
+  <script src="./vendor/codemirror/mode/clike.js"></script>
+  <script src="./vendor/codemirror/mode/python.js"></script>
+  <script src="./vendor/codemirror/mode/powershell.js"></script>
+  <script src="./vendor/codemirror/mode/shell.js"></script>
 </head>
 <body>
   <div class="app-stage">
@@ -2880,8 +3737,8 @@
           </div>
         </div>
         <div class="titlebar-title pywebview-drag-region">
-          <strong>分析日冕地图脚本</strong>
-          <span>Ra3Copilot</span>
+          <strong id="windowTitleText">Ra3Copilot</strong>
+          <span id="windowSubtitleText">工作台</span>
         </div>
         <div class="top-actions pywebview-drag-region">
           <div class="win-actions">
@@ -2892,7 +3749,7 @@
         </div>
       </header>
 
-      <div class="workspace welcome-mode">
+      <div class="workspace welcome-mode panel-hidden">
         <aside class="sidebar" aria-label="会话导航">
           <div class="brand-block">
             <div class="brand-row">
@@ -2903,6 +3760,7 @@
               </div>
             </div>
             <div class="global-actions" aria-label="全局入口">
+              <button class="global-action" type="button" id="openNewWindowBtn"><span class="nav-icon" aria-hidden="true">□</span>新窗口</button>
               <button class="global-action" type="button" id="newChatBtn"><span class="nav-icon" aria-hidden="true">○</span>快速对话</button>
             </div>
           </div>
@@ -2965,23 +3823,58 @@
 
         <main class="welcome-pane" id="welcomePane" aria-label="欢迎页">
           <section class="welcome-shell">
-            <section class="welcome-stage" id="agentSelectPane" aria-label="智能体选择">
+            <section class="welcome-stage" id="agentSelectPane" aria-label="任务场景选择">
               <div>
                 <div class="welcome-kicker">Ra3Copilot</div>
-                <h1 class="welcome-title">选择智能体</h1>
+                <h1 class="welcome-title">开始你的任务</h1>
+                <p class="welcome-copy">先选择要处理的项目或功能场景。Ra3Copilot 会根据入口自动切换通用能力、RA3 优化能力，或展示已接入 IM 的项目。</p>
               </div>
 
-              <div class="agent-choice-grid" aria-label="智能体入口">
+              <section class="welcome-section" aria-label="继续工作">
+                <div class="welcome-section-head">
+                  <h2>继续工作</h2>
+                  <span>最近打开的项目</span>
+                </div>
+                <div class="recent-projects" id="homeRecentProjectsList">
+                  <div class="recent-empty">正在读取最近项目...</div>
+                </div>
+              </section>
+
+              <section class="welcome-section" aria-label="开始新任务">
+                <div class="welcome-section-head">
+                  <h2>开始新任务</h2>
+                </div>
+                <div class="welcome-actions">
+                  <button class="welcome-action primary" type="button" id="quickOpenWorkspaceBtn">
+                    <strong>打开文件夹</strong>
+                    <span>选择任意本地文件夹，作为通用工作区与 Agent 交互。</span>
+                  </button>
+                  <button class="welcome-action" type="button" id="quickCreateWorkspaceBtn">
+                    <strong>新建项目</strong>
+                    <span>创建一个新的本地工作区，适合写作、代码、资料整理和通用任务。</span>
+                  </button>
+                  <button class="welcome-action" type="button" id="quickOpenMapProjectBtn">
+                    <strong>打开 RA3 地图</strong>
+                    <span>选择 RA3 地图文件夹，并把该目录标记为地图开发工程。</span>
+                  </button>
+                </div>
+              </section>
+
+              <section class="welcome-section" aria-label="功能入口">
+                <div class="welcome-section-head">
+                  <h2>功能入口</h2>
+                </div>
+                <div class="agent-choice-grid scenario-grid" aria-label="功能场景入口">
                 <button class="agent-choice" type="button" id="selectRa3AgentBtn">
                   <span class="agent-choice-top">
                     <span class="agent-chip">地图工程</span>
                   </span>
                   <span>
-                    <span class="agent-name">RA3 智能体</span>
-                    <span class="agent-description">针对 RA3 进行特别定制的智能体。</span>
+                    <span class="agent-name">RA3 地图开发</span>
+                    <span class="agent-description">打开或创建 RA3 地图工程，使用 RA3 Companion 工具与地图脚本上下文。</span>
                   </span>
                   <span class="agent-choice-foot">
-                    <strong>进入 RA3 工作流</strong>
+                    <strong>进入 RA3 场景</strong>
                     <span class="agent-arrow" aria-hidden="true">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path d="M5 12h14"></path>
@@ -2996,11 +3889,11 @@
                     <span class="agent-chip">通用任务</span>
                   </span>
                   <span>
-                    <span class="agent-name">万能智能体</span>
-                    <span class="agent-description">可以做任何事情的智能体，协助高效工作学习。</span>
+                    <span class="agent-name">通用工作台</span>
+                    <span class="agent-description">处理普通文件夹、写作、代码、资料整理和日常计划。</span>
                   </span>
                   <span class="agent-choice-foot">
-                    <strong>进入通用工作流</strong>
+                    <strong>进入通用场景</strong>
                     <span class="agent-arrow" aria-hidden="true">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path d="M5 12h14"></path>
@@ -3009,7 +3902,27 @@
                     </span>
                   </span>
                 </button>
-              </div>
+
+                <button class="agent-choice secondary" type="button" id="selectAssistantBtn">
+                  <span class="agent-choice-top">
+                    <span class="agent-chip">IM 接入</span>
+                  </span>
+                  <span>
+                    <span class="agent-name">得力助手</span>
+                    <span class="agent-description">打开已经接入 QQ Bot 等 IM 的项目，从聊天入口访问同一个 Agent。</span>
+                  </span>
+                  <span class="agent-choice-foot">
+                    <strong>查看已接入项目</strong>
+                    <span class="agent-arrow" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M5 12h14"></path>
+                        <path d="M13 6l6 6-6 6"></path>
+                      </svg>
+                    </span>
+                  </span>
+                </button>
+                </div>
+              </section>
             </section>
 
             <section class="welcome-stage" id="ra3WelcomePane" aria-label="RA3 智能体欢迎页" hidden>
@@ -3082,6 +3995,27 @@
                 </div>
               </section>
             </section>
+
+            <section class="welcome-stage" id="assistantWelcomePane" aria-label="得力助手欢迎页" hidden>
+              <div class="welcome-detail-head">
+                <div>
+                  <div class="welcome-kicker">得力助手</div>
+                  <h1 class="welcome-title">已接入 IM 的项目</h1>
+                  <p class="welcome-copy">这里展示所有已绑定 QQ Bot 等 IM 入口的项目。要接入新的项目，先打开任意项目，再到设置里的“当前工作区 / IM 接入”添加绑定。</p>
+                </div>
+                <button class="back-agent-btn" type="button" data-agent-back>返回开始页</button>
+              </div>
+
+              <section class="recent-section" aria-label="已接入 IM 的项目">
+                <div class="recent-head">
+                  <h2>已绑定 IM</h2>
+                </div>
+                <div class="recent-projects" id="assistantRecentProjectsList">
+                  <div class="recent-empty">正在读取已接入 IM 的项目...</div>
+                </div>
+              </section>
+            </section>
+
           </section>
         </main>
 
@@ -3091,8 +4025,14 @@
               <h1 id="sessionTitle">当前对话</h1>
               <p id="projectRootLabel">准备读取脚本与地图配置</p>
             </div>
-            <div class="model-chip">
-              <span id="runStatusLabel">等待桌面桥</span>
+            <div class="chat-actions">
+              <div class="model-chip">
+                <span id="runStatusLabel">等待桌面桥</span>
+              </div>
+              <div class="panel-action-group" aria-label="右侧面板">
+                <button class="panel-action-btn" type="button" id="openTerminalTabBtn" aria-label="新建终端标签" title="新建终端标签">&gt;_</button>
+                <button class="panel-action-btn" type="button" id="togglePanelBtn" aria-label="显示右侧面板" title="显示右侧面板" aria-pressed="false"><span class="panel-toggle-icon" aria-hidden="true"></span></button>
+              </div>
             </div>
           </header>
 
@@ -3133,6 +4073,11 @@
                   <span class="option-label">先说明计划，本轮暂不调用工具</span>
                   <span class="option-hint">安全</span>
                 </button>
+                <button class="permission-option" type="button" role="radio" aria-checked="false" data-policy="plan">
+                  <span class="option-index">4</span>
+                  <span class="option-label">计划模式，创建任务计划</span>
+                  <span class="option-hint">Plan</span>
+                </button>
               </div>
               <div class="permission-actions">
                 <span class="permission-note" id="permissionNote">标准运行会让 Agent 按需调用本地工具。</span>
@@ -3153,7 +4098,19 @@
                     </select>
                   </label>
                   <button class="pill" type="button" id="permissionMenuBtn" aria-expanded="false" aria-controls="permissionPopover">运行偏好</button>
-                  <span class="pill">上下文：当前工作区</span>
+                  <div class="context-usage-shell" id="contextUsageShell">
+                    <button class="context-usage-btn" type="button" id="contextUsageBtn" aria-expanded="false" aria-controls="contextUsagePopover" aria-label="查看上下文窗口">
+                      <span class="context-usage-ring" id="contextUsageRing" aria-hidden="true"></span>
+                      <span class="context-usage-label" id="contextUsageLabel">上下文 --</span>
+                    </button>
+                    <div class="context-usage-popover" id="contextUsagePopover" role="dialog" aria-label="背景信息窗口" aria-hidden="true">
+                      <div class="context-usage-title">背景信息窗口：</div>
+                      <div class="context-usage-percent"><strong id="contextUsagePercent">--</strong> 已用</div>
+                      <div class="context-usage-total" id="contextUsageTotal">已用 -- 标记，共 --</div>
+                      <div class="context-usage-meta" id="contextUsageMeta">估算值</div>
+                      <div class="context-section-list" id="contextUsageSections"></div>
+                    </div>
+                  </div>
                 </div>
                 <div class="tool-settings">
                   <button class="ghost-btn" type="button" id="stopBtn" disabled>中止</button>
@@ -3175,7 +4132,7 @@
               <input id="settingsSearch" type="search" placeholder="搜索设置..." />
             </label>
             <div class="settings-nav-group">
-              <div class="settings-nav-label">模型</div>
+              <div class="settings-nav-label">通用配置</div>
               <button class="settings-tab-btn active" type="button" data-settings-tab="providers">
                 <span class="nav-icon" aria-hidden="true">□</span>
                 <span>Provider</span>
@@ -3191,6 +4148,25 @@
               <button class="settings-tab-btn" type="button" data-settings-tab="observability">
                 <span class="nav-icon" aria-hidden="true">◌</span>
                 <span>观测</span>
+              </button>
+              <button class="settings-tab-btn" type="button" data-settings-tab="soul">
+                <span class="nav-icon" aria-hidden="true">魂</span>
+                <span>SOUL 预设</span>
+              </button>
+              <button class="settings-tab-btn" type="button" data-settings-tab="interface">
+                <span class="nav-icon" aria-hidden="true">UI</span>
+                <span>界面</span>
+              </button>
+            </div>
+            <div class="settings-nav-group">
+              <div class="settings-nav-label">当前工作区</div>
+              <button class="settings-tab-btn" type="button" data-settings-tab="assistant">
+                <span class="nav-icon" aria-hidden="true">魂</span>
+                <span>SOUL</span>
+              </button>
+              <button class="settings-tab-btn" type="button" data-settings-tab="qqbot">
+                <span class="nav-icon" aria-hidden="true">助</span>
+                <span>IM 接入</span>
               </button>
             </div>
           </aside>
@@ -3510,6 +4486,149 @@
                 </div>
               </section>
             </section>
+
+            <section class="settings-page" id="interfaceSettingsPage" hidden>
+              <header class="settings-title">
+                <h1>界面</h1>
+                <p>调整文件预览、编辑器和消息代码块的显示偏好。</p>
+              </header>
+
+              <section class="settings-section">
+                <h2 class="section-heading">代码高亮</h2>
+                <div class="settings-panel">
+                  <div class="settings-row">
+                    <div class="settings-row-label">
+                      <strong>高亮方案</strong>
+                      <span>使用 highlight.js 解析代码；切换后会立即应用到预览、编辑和消息代码块。</span>
+                    </div>
+                    <div class="settings-control">
+                      <select class="settings-select" id="codeHighlightThemeSelect"></select>
+                    </div>
+                  </div>
+                  <div class="settings-row">
+                    <div class="settings-row-label">
+                      <strong>状态</strong>
+                      <span id="codeHighlightThemeStatus">当前使用默认高亮方案。</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </section>
+
+            <section class="settings-page" id="soulSettingsPage" hidden>
+              <header class="settings-title">
+                <h1>SOUL 预设</h1>
+                <p>管理可在工作区中套用的 SOUL。内置预设不可修改；自定义预设保存在本机总体配置中。</p>
+              </header>
+
+              <section class="settings-section">
+                <div class="settings-toolbar">
+                  <button class="primary-btn" type="button" id="newSoulPresetBtn">新增 SOUL</button>
+                  <span class="settings-help" id="soulPresetStatusText">选择一个预设后可以查看或编辑。</span>
+                </div>
+                <div class="settings-panel">
+                  <div class="settings-row block">
+                    <div class="soul-editor-grid">
+                      <div class="settings-list" id="soulPresetList"></div>
+                      <div class="settings-list">
+                        <label class="settings-field">
+                          <span>名称</span>
+                          <input class="settings-input" id="soulPresetNameInput" type="text" placeholder="例如：严谨审稿人" />
+                        </label>
+                        <label class="settings-field">
+                          <span>内容</span>
+                          <textarea class="settings-textarea" id="soulPresetContentInput" placeholder="写下这个 SOUL 对 Agent 人格、语气、偏好和工作方式的约束。"></textarea>
+                        </label>
+                        <div class="settings-actions">
+                          <button class="primary-btn" type="button" id="saveSoulPresetBtn">保存 SOUL</button>
+                          <button class="danger-btn" type="button" id="deleteSoulPresetBtn">删除</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </section>
+
+            <section class="settings-page" id="assistantSettingsPage" hidden>
+              <header class="settings-title">
+                <h1>SOUL</h1>
+                <p>为当前工作区选择一个 SOUL 预设。保存后会写入该项目的 <code>.agent/workspace_config.json</code>，并同步维护根目录的 <code>SOUL.md</code>。</p>
+                <p class="settings-help" id="workspaceConfigProjectText">尚未打开工作区。</p>
+              </header>
+
+              <section class="settings-section" id="workspaceSoulSettingsSection">
+                <h2 class="section-heading">工作区 SOUL</h2>
+                <div class="settings-panel">
+                  <div class="settings-row">
+                    <div class="settings-row-label">
+                      <strong>SOUL 预设</strong>
+                      <span id="workspaceSoulStatusText">选择预设后，保存时会覆盖当前工作区根目录的 <code>SOUL.md</code>。</span>
+                    </div>
+                    <div class="settings-control">
+                      <select class="settings-select" id="workspaceSoulPresetSelect"></select>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <div class="settings-footer-actions">
+                <span id="workspaceSoulSaveStatusText">工作区 SOUL 配置尚未加载。</span>
+                <div class="settings-actions">
+                  <button class="ghost-btn" type="button" id="reloadWorkspaceSettingsBtn">刷新</button>
+                  <button class="primary-btn" type="button" id="saveWorkspaceSoulSettingsBtn">保存 SOUL</button>
+                </div>
+              </div>
+            </section>
+
+            <section class="settings-page" id="qqBotSettingsPage" hidden>
+              <header class="settings-title">
+                <h1>IM 接入</h1>
+                <p>为当前工作区绑定一个或多个 IM 入口。当前支持 QQ Bot；绑定保存在该项目的 <code>.agent/workspace_config.json</code> 中。</p>
+                <p class="settings-help" id="qqBotWorkspaceStatusText">尚未打开工作区。</p>
+              </header>
+
+              <section class="settings-section" id="assistantQqBotSettingsSection">
+                <h2 class="section-heading">QQ Bot 绑定</h2>
+                <div class="settings-panel">
+                  <div class="settings-row">
+                    <div class="settings-row-label">
+                      <strong>QQ Bot</strong>
+                      <span>每条绑定都连接当前工作区。可在 <a href="https://q.qq.com/qqbot/openclaw/" target="_blank" rel="noopener noreferrer">QQ 机器人开放平台</a> 获取 AppID 和 AppSecret。</span>
+                    </div>
+                    <div class="settings-actions">
+                      <button class="ghost-btn" type="button" id="addAssistantQqBotBindingBtn">添加 QQ Bot</button>
+                    </div>
+                  </div>
+                  <div id="assistantQqBotBindingsList"></div>
+                  <div class="settings-row" id="assistantQqBotEmptyRow">
+                    <div class="settings-row-label">
+                      <strong>还没有 QQ Bot 绑定</strong>
+                      <span>添加一条绑定后，这个工作区就可以通过对应 QQ Bot 访问。</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="settings-section" id="workspaceConfigUnavailableSection" hidden>
+                <div class="settings-panel">
+                  <div class="settings-row">
+                    <div class="settings-row-label">
+                      <strong>尚未打开工作区</strong>
+                      <span>打开任意工作区后，都可以在这里接入 QQ Bot。未来新增 IM 类型也会出现在这里。</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <div class="settings-footer-actions">
+                <span id="assistantBindingStatusText">工作区配置尚未加载。</span>
+                <div class="settings-actions">
+                  <button class="ghost-btn" type="button" id="reloadQqBotSettingsBtn">刷新</button>
+                  <button class="primary-btn" type="button" id="saveAssistantSettingsBtn">保存 IM 接入</button>
+                </div>
+              </div>
+            </section>
           </section>
         </main>
 
@@ -3551,6 +4670,51 @@
                     <button class="primary-btn" type="button" id="confirmProjectCreateBtn">创建并打开</button>
                   </div>
                 </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="modal-backdrop hidden" id="soulInitDialog" role="dialog" aria-modal="true" aria-labelledby="soulInitDialogTitle">
+          <section class="project-dialog">
+            <header class="dialog-header">
+              <h2 id="soulInitDialogTitle">选择工作区 SOUL</h2>
+            </header>
+            <div class="dialog-body">
+              <div class="settings-panel">
+                <div class="settings-row block">
+                  <div class="soul-init-options">
+                    <div class="settings-row-label">
+                      <strong id="soulInitProjectText">新项目已初始化</strong>
+                      <span>SOUL 会写入项目根目录的 <code>SOUL.md</code>，之后可在工作区配置中切换或移除。</span>
+                    </div>
+                    <select class="settings-select" id="soulInitPresetSelect"></select>
+                    <span class="soul-init-note">跳过后项目默认没有 SOUL，可稍后再配置。</span>
+                    <div class="settings-actions">
+                      <button class="ghost-btn" type="button" id="skipSoulInitBtn">跳过</button>
+                      <button class="primary-btn" type="button" id="applySoulInitBtn">应用 SOUL</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="modal-backdrop hidden" id="deleteConfirmDialog" role="dialog" aria-modal="true" aria-labelledby="deleteConfirmTitle">
+          <section class="provider-dialog delete-dialog">
+            <header class="dialog-header">
+              <h2 id="deleteConfirmTitle">删除项目项</h2>
+            </header>
+            <div class="dialog-body">
+              <div class="delete-dialog-copy">
+                <strong id="deleteConfirmName">未选择文件</strong>
+                <span id="deleteConfirmMessage">请选择删除方式。</span>
+              </div>
+              <div class="delete-dialog-actions">
+                <button class="primary-btn" type="button" data-delete-choice="trash">移入回收站</button>
+                <button class="danger-btn" type="button" data-delete-choice="permanent">彻底删除</button>
+                <button class="ghost-btn" type="button" data-delete-choice="cancel">取消</button>
               </div>
             </div>
           </section>
@@ -3617,45 +4781,57 @@
           </section>
         </div>
 
-        <aside class="drawer closed" id="detailDrawer" aria-label="工具调用详情抽屉">
-          <header class="drawer-header">
-            <div class="drawer-title">
-              <strong id="drawerToolName">输出</strong>
-              <span id="drawerSubtitle">等待工具调用</span>
+        <aside class="side-panel" id="sidePanel" aria-label="详情面板">
+          <div class="panel-resizer" id="panelResizer" aria-hidden="true"></div>
+          <div class="panel-tabs" id="panelTabs" role="tablist">
+            <div class="panel-toolbar">
+              <button type="button" id="panelAddTabBtn" aria-label="新增标签" title="新增标签">+</button>
+              <button type="button" id="panelTerminalBtn" aria-label="新建终端标签" title="新建终端标签">&gt;_</button>
+              <button type="button" id="closePanelBtn" aria-label="关闭面板" title="关闭面板">×</button>
             </div>
-            <button class="icon-btn" type="button" id="closeDrawer" aria-label="关闭详情">×</button>
-          </header>
-
-          <div class="drawer-body">
-            <div class="detail-stack" id="toolDetailView">
-              <section class="detail-card">
-                <h2>调用信息</h2>
-                <dl class="kv-list" id="drawerMeta"></dl>
-              </section>
-
-              <section class="detail-card">
-                <h2>参数</h2>
-                <pre id="drawerArgs"></pre>
-              </section>
-
-              <section class="detail-card">
-                <h2>结果</h2>
-                <pre id="drawerResult"></pre>
-                <div class="drawer-footer-actions">
-                  <button class="ghost-btn" type="button" id="copyResult">复制结果</button>
-                  <button class="ghost-btn" type="button" id="rerunTool">重新运行</button>
+          </div>
+          <div class="panel-content" id="panelContent">
+            <!-- Tool detail pane (reused across all tool tabs) -->
+            <div class="panel-tab-pane" id="toolDetailView">
+              <header class="drawer-header">
+                <div class="drawer-title">
+                  <strong id="drawerToolName">输出</strong>
+                  <span id="drawerSubtitle">等待工具调用</span>
                 </div>
-              </section>
+              </header>
+              <div class="drawer-body">
+                <div class="detail-stack">
+                  <section class="detail-card">
+                    <h2>调用信息</h2>
+                    <dl class="kv-list" id="drawerMeta"></dl>
+                  </section>
 
-              <section class="detail-card" id="drawerNoticeCard">
-                <div class="notice">
-                  <span aria-hidden="true">!</span>
-                  <span id="drawerNotice">运行 Agent 后，这里会显示工具调用的参数和结果。</span>
+                  <section class="detail-card">
+                    <h2>参数</h2>
+                    <pre id="drawerArgs"></pre>
+                  </section>
+
+                  <section class="detail-card">
+                    <h2>结果</h2>
+                    <pre id="drawerResult"></pre>
+                    <div class="drawer-footer-actions">
+                      <button class="ghost-btn" type="button" id="copyResult">复制结果</button>
+                      <button class="ghost-btn" type="button" id="rerunTool">重新运行</button>
+                    </div>
+                  </section>
+
+                  <section class="detail-card" id="drawerNoticeCard">
+                    <div class="notice">
+                      <span aria-hidden="true">!</span>
+                      <span id="drawerNotice">运行 Agent 后，这里会显示工具调用的参数和结果。</span>
+                    </div>
+                  </section>
                 </div>
-              </section>
+              </div>
             </div>
 
-            <div class="file-detail-view hidden" id="fileDetailView">
+            <!-- File detail pane (reused across all file tabs) -->
+            <div class="panel-tab-pane file-detail-view hidden" id="fileDetailView">
               <div class="file-editor-meta">
                 <div class="file-editor-path" id="fileEditorPath">未选择文件</div>
                 <div class="file-editor-stats" id="fileEditorStats">
@@ -3670,13 +4846,27 @@
                 <pre class="file-code-preview" id="fileCodePreview" aria-label="代码预览"><code></code></pre>
                 <div class="file-markdown-preview hidden" id="fileMarkdownPreview" aria-label="Markdown 预览"></div>
                 <div class="file-editor-shell hidden" id="fileEditorShell">
-                  <pre class="file-editor-highlight" id="fileEditorHighlight" aria-hidden="true"><code></code></pre>
                   <textarea class="file-editor" id="fileEditor" spellcheck="false" wrap="off" readonly></textarea>
                 </div>
               </div>
               <div class="drawer-footer-actions">
                 <button class="ghost-btn" type="button" id="reloadFileBtn">重新读取</button>
                 <button class="primary-btn" type="button" id="saveFileBtn" disabled>保存修改</button>
+              </div>
+            </div>
+
+            <div class="panel-tab-pane terminal-detail-view hidden" id="terminalDetailView">
+              <div class="terminal-header">
+                <div class="terminal-title">
+                  <strong id="terminalTitle">终端</strong>
+                  <span id="terminalCwd">当前工作区</span>
+                </div>
+                <button class="ghost-btn" type="button" id="terminalClearBtn">清空</button>
+              </div>
+              <pre class="terminal-output" id="terminalOutput" aria-label="终端输出"></pre>
+              <div class="terminal-command-row">
+                <input class="terminal-command-input" id="terminalCommandInput" type="text" spellcheck="false" autocomplete="off" placeholder="输入命令" />
+                <button class="primary-btn" type="button" id="terminalRunBtn">运行</button>
               </div>
             </div>
           </div>
@@ -3687,10 +4877,16 @@
       </div>
       <div class="context-menu" id="fileContextMenu" role="menu" hidden>
         <button type="button" role="menuitem" id="fileMenuRefresh">刷新</button>
+        <button type="button" role="menuitem" id="fileMenuReveal">在文件管理器中打开</button>
         <button type="button" role="menuitem" id="fileMenuNewFile">新建文件</button>
         <button type="button" role="menuitem" id="fileMenuNewFolder">新建文件夹</button>
         <button type="button" role="menuitem" id="fileMenuRename">重命名</button>
         <button class="danger-menu-item" type="button" role="menuitem" id="fileMenuDelete">删除</button>
+      </div>
+      <div class="context-menu" id="panelAddMenu" role="menu" hidden>
+        <button type="button" role="menuitem" id="panelMenuNewTerminal">新建终端</button>
+        <button type="button" role="menuitem" id="panelMenuOpenSelectedFile">打开选中文件</button>
+        <button type="button" role="menuitem" id="panelMenuShowFiles">查看项目文件</button>
       </div>
       <div class="resize-handle n" data-resize-edge="n"></div>
       <div class="resize-handle e" data-resize-edge="e"></div>
@@ -3718,6 +4914,8 @@
       assistantBuffer: "",
       runStartedAt: 0,
       tools: new Map(),
+      todos: [],
+      todoProgress: null,
       lastPrompt: "",
       busy: false,
       activeView: "welcome",
@@ -3727,7 +4925,12 @@
       projectsLoadedFromBridge: false,
       settingsTab: "providers",
       settings: null,
+      workspaceConfig: null,
+      workspaceRuntime: null,
       settingsLoadedFromBridge: false,
+      contextUsage: null,
+      contextUsageRequestId: 0,
+      contextUsageTimer: null,
       conversationUsage: null,
       conversationUsageId: "",
       sidebarMode: "history",
@@ -3737,13 +4940,19 @@
       selectedFileType: "",
       selectedFileEncoding: "utf-8",
       fileViewMode: "preview",
+      fileScrollTop: 0,
+      fileScrollLeft: 0,
       fileDirty: false,
       fileContextPath: "",
       fileContextType: "",
+      terminalSessions: new Map(),
+      terminalCounter: 0,
       selectedProviderName: "",
       fetchedModels: [],
       selectedModelKey: "",
       modelEditorMode: "edit",
+      selectedSoulPresetId: "",
+      soulPresetEditorMode: "edit",
       usage: null,
       usageMetric: "tokens",
       usageLoadedFromBridge: false,
@@ -3753,11 +4962,17 @@
       projectDialogAgentMode: "ra3",
       projectPathTouched: false,
       historyContextId: "",
+      deleteChoiceResolve: null,
       windowResize: null
     };
 
-    const drawer = document.getElementById("detailDrawer");
-    const closeDrawer = document.getElementById("closeDrawer");
+    const sidePanel = document.getElementById("sidePanel");
+    const panelTabs = document.getElementById("panelTabs");
+    const panelContent = document.getElementById("panelContent");
+    const panelResizer = document.getElementById("panelResizer");
+    const panelAddTabBtn = document.getElementById("panelAddTabBtn");
+    const panelTerminalBtn = document.getElementById("panelTerminalBtn");
+    const closePanelBtn = document.getElementById("closePanelBtn");
     const drawerToolName = document.getElementById("drawerToolName");
     const drawerSubtitle = document.getElementById("drawerSubtitle");
     const drawerMeta = document.getElementById("drawerMeta");
@@ -3779,18 +4994,36 @@
     const permissionSkip = document.getElementById("permissionSkip");
     const permissionNote = document.getElementById("permissionNote");
     const chatModelSelect = document.getElementById("chatModelSelect");
+    const contextUsageShell = document.getElementById("contextUsageShell");
+    const contextUsageBtn = document.getElementById("contextUsageBtn");
+    const contextUsageRing = document.getElementById("contextUsageRing");
+    const contextUsageLabel = document.getElementById("contextUsageLabel");
+    const contextUsagePopover = document.getElementById("contextUsagePopover");
+    const contextUsagePercent = document.getElementById("contextUsagePercent");
+    const contextUsageTotal = document.getElementById("contextUsageTotal");
+    const contextUsageMeta = document.getElementById("contextUsageMeta");
+    const contextUsageSections = document.getElementById("contextUsageSections");
     const companionStatusDot = document.getElementById("companionStatusDot");
     const runtimeInputTokens = document.getElementById("runtimeInputTokens");
     const runtimeCachedInputTokens = document.getElementById("runtimeCachedInputTokens");
     const runtimeOutputTokens = document.getElementById("runtimeOutputTokens");
     const runtimeCacheRate = document.getElementById("runtimeCacheRate");
     const runtimeCost = document.getElementById("runtimeCost");
+    const openNewWindowBtn = document.getElementById("openNewWindowBtn");
+    const openTerminalTabBtn = document.getElementById("openTerminalTabBtn");
+    const togglePanelBtn = document.getElementById("togglePanelBtn");
     const welcomePane = document.getElementById("welcomePane");
     const agentSelectPane = document.getElementById("agentSelectPane");
     const ra3WelcomePane = document.getElementById("ra3WelcomePane");
     const universalWelcomePane = document.getElementById("universalWelcomePane");
+    const assistantWelcomePane = document.getElementById("assistantWelcomePane");
+    const homeRecentProjectsList = document.getElementById("homeRecentProjectsList");
+    const quickOpenWorkspaceBtn = document.getElementById("quickOpenWorkspaceBtn");
+    const quickCreateWorkspaceBtn = document.getElementById("quickCreateWorkspaceBtn");
+    const quickOpenMapProjectBtn = document.getElementById("quickOpenMapProjectBtn");
     const selectRa3AgentBtn = document.getElementById("selectRa3AgentBtn");
     const selectUniversalAgentBtn = document.getElementById("selectUniversalAgentBtn");
+    const selectAssistantBtn = document.getElementById("selectAssistantBtn");
     const agentBackButtons = Array.from(document.querySelectorAll("[data-agent-back]"));
     const startDefaultProjectBtn = document.getElementById("startDefaultProjectBtn");
     const createProjectBtn = document.getElementById("createProjectBtn");
@@ -3798,8 +5031,11 @@
     const startUniversalProjectBtn = document.getElementById("startUniversalProjectBtn");
     const createUniversalProjectBtn = document.getElementById("createUniversalProjectBtn");
     const openWorkspaceProjectBtn = document.getElementById("openWorkspaceProjectBtn");
+    const createAssistantProjectBtn = document.getElementById("createAssistantProjectBtn");
+    const openAssistantProjectBtn = document.getElementById("openAssistantProjectBtn");
     const recentProjectsList = document.getElementById("recentProjectsList");
     const universalRecentProjectsList = document.getElementById("universalRecentProjectsList");
+    const assistantRecentProjectsList = document.getElementById("assistantRecentProjectsList");
     const projectsDirLabel = document.getElementById("projectsDirLabel");
     const projectDialog = document.getElementById("projectDialog");
     const projectDialogTitle = document.getElementById("projectDialogTitle");
@@ -3812,6 +5048,12 @@
     const projectOperationHint = document.getElementById("projectOperationHint");
     const projectRootLabel = document.getElementById("projectRootLabel");
     const sessionTitle = document.getElementById("sessionTitle");
+    const windowTitleText = document.getElementById("windowTitleText");
+    const windowSubtitleText = document.getElementById("windowSubtitleText");
+    const deleteConfirmDialog = document.getElementById("deleteConfirmDialog");
+    const deleteConfirmTitle = document.getElementById("deleteConfirmTitle");
+    const deleteConfirmName = document.getElementById("deleteConfirmName");
+    const deleteConfirmMessage = document.getElementById("deleteConfirmMessage");
     const runStatusLabel = document.getElementById("runStatusLabel");
     const newChatBtn = document.getElementById("newChatBtn");
     const conversationList = document.getElementById("conversationList");
@@ -3833,10 +5075,15 @@
     const deleteHistoryItem = document.getElementById("deleteHistoryItem");
     const fileContextMenu = document.getElementById("fileContextMenu");
     const fileMenuRefresh = document.getElementById("fileMenuRefresh");
+    const fileMenuReveal = document.getElementById("fileMenuReveal");
     const fileMenuNewFile = document.getElementById("fileMenuNewFile");
     const fileMenuNewFolder = document.getElementById("fileMenuNewFolder");
     const fileMenuRename = document.getElementById("fileMenuRename");
     const fileMenuDelete = document.getElementById("fileMenuDelete");
+    const panelAddMenu = document.getElementById("panelAddMenu");
+    const panelMenuNewTerminal = document.getElementById("panelMenuNewTerminal");
+    const panelMenuOpenSelectedFile = document.getElementById("panelMenuOpenSelectedFile");
+    const panelMenuShowFiles = document.getElementById("panelMenuShowFiles");
     const resizeHandles = Array.from(document.querySelectorAll("[data-resize-edge]"));
     const backToChatBtn = document.getElementById("backToChatBtn");
     const chatPane = document.querySelector(".chat-pane");
@@ -3851,15 +5098,25 @@
     const fileCodePreview = document.getElementById("fileCodePreview");
     const fileMarkdownPreview = document.getElementById("fileMarkdownPreview");
     const fileEditorShell = document.getElementById("fileEditorShell");
-    const fileEditorHighlight = document.getElementById("fileEditorHighlight");
     const fileEditor = document.getElementById("fileEditor");
     const reloadFileBtn = document.getElementById("reloadFileBtn");
     const saveFileBtn = document.getElementById("saveFileBtn");
+    const terminalDetailView = document.getElementById("terminalDetailView");
+    const terminalTitle = document.getElementById("terminalTitle");
+    const terminalCwd = document.getElementById("terminalCwd");
+    const terminalOutput = document.getElementById("terminalOutput");
+    const terminalCommandInput = document.getElementById("terminalCommandInput");
+    const terminalRunBtn = document.getElementById("terminalRunBtn");
+    const terminalClearBtn = document.getElementById("terminalClearBtn");
     const settingsTabs = Array.from(document.querySelectorAll(".settings-tab-btn"));
     const providersSettingsPage = document.getElementById("providersSettingsPage");
     const modelsSettingsPage = document.getElementById("modelsSettingsPage");
     const usageSettingsPage = document.getElementById("usageSettingsPage");
     const observabilitySettingsPage = document.getElementById("observabilitySettingsPage");
+    const assistantSettingsPage = document.getElementById("assistantSettingsPage");
+    const qqBotSettingsPage = document.getElementById("qqBotSettingsPage");
+    const soulSettingsPage = document.getElementById("soulSettingsPage");
+    const interfaceSettingsPage = document.getElementById("interfaceSettingsPage");
     const providerPresetSelect = document.getElementById("providerPresetSelect");
     const providerNameInput = document.getElementById("providerNameInput");
     const providerBaseUrlInput = document.getElementById("providerBaseUrlInput");
@@ -3912,16 +5169,54 @@
     const observabilityProjectInput = document.getElementById("observabilityProjectInput");
     const observabilityStatusText = document.getElementById("observabilityStatusText");
     const saveObservabilityBtn = document.getElementById("saveObservabilityBtn");
+    const soulPresetList = document.getElementById("soulPresetList");
+    const newSoulPresetBtn = document.getElementById("newSoulPresetBtn");
+    const soulPresetNameInput = document.getElementById("soulPresetNameInput");
+    const soulPresetContentInput = document.getElementById("soulPresetContentInput");
+    const saveSoulPresetBtn = document.getElementById("saveSoulPresetBtn");
+    const deleteSoulPresetBtn = document.getElementById("deleteSoulPresetBtn");
+    const soulPresetStatusText = document.getElementById("soulPresetStatusText");
+    const workspaceConfigProjectText = document.getElementById("workspaceConfigProjectText");
+    const workspaceSoulSettingsSection = document.getElementById("workspaceSoulSettingsSection");
+    const workspaceSoulPresetSelect = document.getElementById("workspaceSoulPresetSelect");
+    const workspaceSoulStatusText = document.getElementById("workspaceSoulStatusText");
+    const workspaceSoulSaveStatusText = document.getElementById("workspaceSoulSaveStatusText");
+    const saveWorkspaceSoulSettingsBtn = document.getElementById("saveWorkspaceSoulSettingsBtn");
+    const qqBotWorkspaceStatusText = document.getElementById("qqBotWorkspaceStatusText");
+    const assistantQqBotSettingsSection = document.getElementById("assistantQqBotSettingsSection");
+    const workspaceConfigUnavailableSection = document.getElementById("workspaceConfigUnavailableSection");
+    const assistantQqBotBindingsList = document.getElementById("assistantQqBotBindingsList");
+    const assistantQqBotEmptyRow = document.getElementById("assistantQqBotEmptyRow");
+    const addAssistantQqBotBindingBtn = document.getElementById("addAssistantQqBotBindingBtn");
+    const reloadWorkspaceSettingsBtn = document.getElementById("reloadWorkspaceSettingsBtn");
+    const reloadQqBotSettingsBtn = document.getElementById("reloadQqBotSettingsBtn");
+    const assistantBindingStatusText = document.getElementById("assistantBindingStatusText");
+    const saveAssistantSettingsBtn = document.getElementById("saveAssistantSettingsBtn");
+    const soulInitDialog = document.getElementById("soulInitDialog");
+    const soulInitProjectText = document.getElementById("soulInitProjectText");
+    const soulInitPresetSelect = document.getElementById("soulInitPresetSelect");
+    const skipSoulInitBtn = document.getElementById("skipSoulInitBtn");
+    const applySoulInitBtn = document.getElementById("applySoulInitBtn");
+    const codeHighlightThemeSelect = document.getElementById("codeHighlightThemeSelect");
+    const codeHighlightThemeStatus = document.getElementById("codeHighlightThemeStatus");
     const SETTINGS_CACHE_KEY = "ra3copilot.settingsSnapshot.v1";
     const USAGE_DISPLAY_KEY = "ra3copilot.showUsageDetails.v1";
     const AGENT_MODE_KEY = "ra3copilot.agentMode.v1";
+    const CODE_HIGHLIGHT_THEME_KEY = "ra3copilot.codeHighlightTheme.v1";
+    const DEFAULT_CODE_HIGHLIGHT_THEME = "github";
+    const CODE_HIGHLIGHT_THEMES = [
+      { id: "vivid", label: "鲜明", description: "高饱和浅色主题，适合快速扫代码。" },
+      { id: "github", label: "GitHub", description: "接近 GitHub Light 的克制配色。" },
+      { id: "monokai", label: "Monokai", description: "更活泼的经典编辑器配色。" },
+      { id: "nord", label: "Nord", description: "低对比、冷色系的舒适配色。" }
+    ];
     const AGENT_META = {
       ra3: {
         label: "RA3 智能体",
         projectLabel: "地图工程",
         projectBadge: "地图工程",
         createTitle: "新建地图工程",
-        createHint: "默认保存在用户数据的 projects 目录下；目录不存在会自动创建。",
+        createHint: "默认保存在 RA3 地图专用项目目录下；目录不存在会自动创建。",
         createEmptyHint: "新工程不能保存到非空文件夹；保存目录不能包含 Windows 非法字符。",
         sessionFallback: "RA3 对话",
         projectReady: "地图工程已打开，准备读取脚本与配置",
@@ -3936,7 +5231,7 @@
         projectLabel: "工作区",
         projectBadge: "工作区",
         createTitle: "新建工作区",
-        createHint: "默认保存在用户数据的 projects 目录下；目录不存在会自动创建。",
+        createHint: "默认保存在通用工作区专用项目目录下；目录不存在会自动创建。",
         createEmptyHint: "新工作区不能保存到非空文件夹；保存目录不能包含 Windows 非法字符。",
         sessionFallback: "通用对话",
         projectReady: "工作区已打开，可以开始通用任务",
@@ -3945,9 +5240,26 @@
         busy: "万能智能体正在处理当前请求",
         welcome:
           "你好，我是万能智能体。你可以把工作、学习、写作、代码或信息整理任务交给我，我会尽量给出清晰、可执行的协助。"
+      },
+      assistant: {
+        label: "得力助手",
+        projectLabel: "项目",
+        projectBadge: "IM 项目",
+        createTitle: "新建工作区",
+        createHint: "默认保存在通用工作区目录下；目录不存在会自动创建。",
+        createEmptyHint: "新工作区不能保存到非空文件夹；保存目录不能包含 Windows 非法字符。",
+        sessionFallback: "得力助手对话",
+        projectReady: "已打开项目，可以开始处理个人助理任务",
+        projectMissing: "尚未打开项目",
+        placeholder: "描述要交给得力助手处理的记录、计划、资料或自动化任务",
+        busy: "得力助手正在处理当前请求",
+        welcome:
+          "你好，我是得力助手。你可以把记录、计划、资料整理和自动化任务交给我；绑定 QQ Bot 后，也可以从外部聊天入口访问我。"
       }
     };
     let selectedPermissionPolicy = "once";
+    let fileCodeEditor = null;
+    let syncingFileEditor = false;
 
     // --- Daemon HTTP client ------------------------------------------------
     // The frontend talks to the local daemon directly via fetch. getApi()
@@ -3958,6 +5270,7 @@
     // clientId are auto-injected from window state so call sites need no edit.
     const DAEMON_CLIENT_ID = "c-" + Math.random().toString(36).slice(2, 10);
     let DAEMON_BASE_URL = "";
+    let DAEMON_TOKEN = "";
 
     // methodName -> { p: endpoint path, a: [positional arg keys] }
     // Endpoints marked with "+project"/"+thread"/"+client" auto-inject those.
@@ -3968,14 +5281,17 @@
       stop_run:            { p: "/runs/stop",   a: ["runId"] },
       // context / agent
       get_context:         { p: "/context",     a: [], inject: ["project","thread","mode"] },
+      get_context_usage:   { p: "/context/usage", a: ["draftText"], inject: ["project","thread","mode"] },
       set_agent_mode:      { p: "/agent/mode",  a: ["agentMode"], inject: ["project","thread"] },
       // projects
       get_projects:        { p: "/projects/list", a: ["projectId"] },
       open_project:        { p: "/projects/open", a: ["projectId"] },
       create_project:      { p: "/projects/create-map", a: ["name", "projectPath"] },
       create_workspace_project: { p: "/projects/create-workspace", a: ["name", "projectPath"] },
+      create_assistant_project: { p: "/projects/create-assistant", a: ["name", "projectPath"] },
       open_map_project_file: { p: "/projects/open-map-from-path", a: ["path"] },
       open_workspace_project_directory: { p: "/projects/open-workspace-from-path", a: ["path"] },
+      open_assistant_project_directory: { p: "/projects/open-assistant-from-path", a: ["path"] },
       remove_recent_project: { p: "/projects/remove-recent", a: ["projectId"], inject: ["currentProject"] },
       // history
       get_history:         { p: "/history/list",  a: [], inject: ["project"] },
@@ -3988,7 +5304,8 @@
       save_project_file:   { p: "/files/save",   a: ["path", "content", "encoding"], inject: ["project"] },
       create_project_item: { p: "/files/create", a: ["parentPath", "name", "kind"], inject: ["project"] },
       rename_project_item: { p: "/files/rename", a: ["path", "newName"], inject: ["project"] },
-      delete_project_item: { p: "/files/delete", a: ["path"], inject: ["project"] },
+      delete_project_item: { p: "/files/delete", a: ["path", "deleteMode"], inject: ["project"] },
+      run_terminal_command: { p: "/terminal/run", a: ["command"], inject: ["project"] },
       // settings
       get_settings:        { p: "/settings/get", a: [] },
       save_provider:       { p: "/settings/provider/save", a: ["provider", "originalName"] },
@@ -4000,6 +5317,11 @@
       delete_model:        { p: "/settings/model/delete", a: ["providerName", "modelName"] },
       set_active_model:    { p: "/settings/model/set-active", a: ["providerName", "modelName"] },
       save_observability:  { p: "/settings/observability/save", a: ["observability"] },
+      save_assistant_settings: { p: "/settings/assistant/save", a: ["assistant"] },
+      save_soul_preset: { p: "/settings/soul-preset/save", a: ["soulPreset", "originalId"] },
+      delete_soul_preset: { p: "/settings/soul-preset/delete", a: ["presetId"] },
+      get_workspace_settings: { p: "/settings/workspace/get", a: ["projectId"] },
+      save_workspace_settings: { p: "/settings/workspace/save", a: ["projectId", "workspaceConfig"] },
       // usage
       get_usage_summary:   { p: "/usage/summary", a: ["days"] },
       get_conversation_usage: { p: "/usage/conversation", a: ["conversationId"] },
@@ -4009,6 +5331,7 @@
       close_window:        { local: true },
       resize_window_by:    { local: true },
       open_new_window:     { local: true },
+      set_window_title:    { local: true },
     };
 
     function currentProjectBody() {
@@ -4033,6 +5356,33 @@
       return window.pywebview && window.pywebview.api ? window.pywebview.api : null;
     }
 
+    function daemonHeaders() {
+      const headers = { "Content-Type": "application/json" };
+      if (DAEMON_TOKEN) headers["X-Ra3Copilot-Token"] = DAEMON_TOKEN;
+      return headers;
+    }
+
+    function handleDaemonLost(reason) {
+      if (!daemonWasReady || daemonClosing) return;
+      daemonClosing = true;
+      if (daemonHealthTimer) {
+        window.clearInterval(daemonHealthTimer);
+        daemonHealthTimer = null;
+      }
+      DAEMON_BASE_URL = "";
+      DAEMON_TOKEN = "";
+      state.busy = false;
+      setBusy(false);
+      sendBtn.disabled = true;
+      runStatusLabel.textContent = "守护进程已退出";
+      const bridge = localBridge();
+      if (bridge && typeof bridge.close_window === "function") {
+        Promise.resolve(bridge.close_window()).catch(() => window.close());
+      } else {
+        window.close();
+      }
+    }
+
     function getApi() {
       return new Proxy({}, {
         get(_target, method) {
@@ -4055,10 +5405,14 @@
               }
               return bridge.choose_directory(args[0]);
             }
-            // open_map_project_file() / open_workspace_project_directory() with no
-            // arg keep the old "pick then open" behaviour: trigger the native
+            // open_*_project_directory() with no arg keeps the old
+            // "pick then open" behaviour: trigger the native
             // picker here, then forward the chosen path to the daemon.
-            if (method === "open_map_project_file" || method === "open_workspace_project_directory") {
+            if (
+              method === "open_map_project_file" ||
+              method === "open_workspace_project_directory" ||
+              method === "open_assistant_project_directory"
+            ) {
               let chosen = args[0];
               if (!chosen) {
                 const bridge = localBridge();
@@ -4075,11 +5429,12 @@
               try {
                 const res = await fetch(DAEMON_BASE_URL + route.p, {
                   method: "POST",
-                  headers: { "Content-Type": "application/json" },
+                  headers: daemonHeaders(),
                   body: JSON.stringify({ path: chosen })
                 });
                 return await res.json();
               } catch (err) {
+                handleDaemonLost(err);
                 return { ok: false, error: "守护进程请求失败：" + (err && err.message ? err.message : err) };
               }
             }
@@ -4116,11 +5471,12 @@
             try {
               const res = await fetch(DAEMON_BASE_URL + route.p, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: daemonHeaders(),
                 body: JSON.stringify(body)
               });
               return await res.json();
             } catch (err) {
+              handleDaemonLost(err);
               return { ok: false, error: "守护进程请求失败：" + (err && err.message ? err.message : err) };
             }
           };
@@ -4129,7 +5485,8 @@
     }
 
     function normalizeAgentMode(mode) {
-      return mode === "universal" ? "universal" : "ra3";
+      if (mode === "openclaw") return "assistant";
+      return Object.prototype.hasOwnProperty.call(AGENT_META, mode) ? mode : "ra3";
     }
 
     function currentAgentMeta() {
@@ -4227,6 +5584,52 @@
       state.showUsageDetails = Boolean(value);
       if (persist) writeUsageDisplayPreference(state.showUsageDetails);
       renderUsageDisplayPreference();
+    }
+
+    function normalizeCodeHighlightTheme(theme) {
+      const value = String(theme || "").trim().toLowerCase();
+      return CODE_HIGHLIGHT_THEMES.some((item) => item.id === value) ? value : DEFAULT_CODE_HIGHLIGHT_THEME;
+    }
+
+    function readCodeHighlightThemePreference() {
+      try {
+        return normalizeCodeHighlightTheme(window.localStorage.getItem(CODE_HIGHLIGHT_THEME_KEY));
+      } catch {
+        return DEFAULT_CODE_HIGHLIGHT_THEME;
+      }
+    }
+
+    function writeCodeHighlightThemePreference(theme) {
+      try {
+        window.localStorage.setItem(CODE_HIGHLIGHT_THEME_KEY, normalizeCodeHighlightTheme(theme));
+      } catch {
+        // Ignore UI preference persistence failures.
+      }
+    }
+
+    function applyCodeHighlightTheme(theme = readCodeHighlightThemePreference()) {
+      const normalized = normalizeCodeHighlightTheme(theme);
+      document.body.dataset.codeHighlightTheme = normalized;
+      if (codeHighlightThemeSelect) codeHighlightThemeSelect.value = normalized;
+      const current = CODE_HIGHLIGHT_THEMES.find((item) => item.id === normalized) || CODE_HIGHLIGHT_THEMES[0];
+      if (codeHighlightThemeStatus) {
+        codeHighlightThemeStatus.textContent = `当前方案：${current.label}。${current.description}`;
+      }
+      return normalized;
+    }
+
+    function renderInterfaceSettings() {
+      if (!codeHighlightThemeSelect) return;
+      codeHighlightThemeSelect.innerHTML = CODE_HIGHLIGHT_THEMES.map((theme) => (
+        `<option value="${escapeHtml(theme.id)}">${escapeHtml(theme.label)}</option>`
+      )).join("");
+      applyCodeHighlightTheme();
+    }
+
+    function setCodeHighlightTheme(theme) {
+      const normalized = applyCodeHighlightTheme(theme);
+      writeCodeHighlightThemePreference(normalized);
+      updateCodePreview();
     }
 
     function escapeHtml(value) {
@@ -4335,7 +5738,9 @@
         html: false,
         linkify: true,
         typographer: false,
-        breaks: false
+        breaks: false,
+        langPrefix: "hljs language-",
+        highlight: (code, language) => highlightCode(code, language || "text")
       });
       const defaultLinkOpen = md.renderer.rules.link_open || ((tokens, idx, options, env, self) => (
         self.renderToken(tokens, idx, options)
@@ -4399,13 +5804,14 @@
         const fence = line.match(/^```\s*([\w-]*)\s*$/);
         if (fence) {
           const codeLines = [];
+          const language = normalizeCodeLanguage(fence[1] || "text");
           index += 1;
           while (index < lines.length && !/^```\s*$/.test(lines[index])) {
             codeLines.push(lines[index]);
             index += 1;
           }
           if (index < lines.length) index += 1;
-          blocks.push(`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
+          blocks.push(`<pre><code class="${escapeAttribute(codeClassForLanguage(language))}">${highlightCode(codeLines.join("\n"), language)}</code></pre>`);
           continue;
         }
 
@@ -4565,6 +5971,148 @@
       })}%`;
     }
 
+    const CONTEXT_SECTION_LABELS = {
+      system: "System",
+      tools: "Tools",
+      skills: "Skills",
+      instructions: "Instructions",
+      project: "Project",
+      history: "History",
+      draft: "Draft"
+    };
+
+    const CONTEXT_SECTION_COLORS = {
+      system: "#2563eb",
+      tools: "#7c3aed",
+      skills: "#0f766e",
+      instructions: "#b45309",
+      project: "#64748b",
+      history: "#db2777",
+      draft: "#16a34a"
+    };
+
+    function formatCompactTokens(value) {
+      const number = Number(value || 0);
+      if (!Number.isFinite(number) || number <= 0) return "0";
+      if (number >= 1_000_000) return `${formatDecimal(number / 1_000_000, 1)}m`;
+      if (number >= 1_000) return `${formatDecimal(number / 1_000, 0)}k`;
+      return formatInteger(number);
+    }
+
+    function contextUsageColor(percent) {
+      const value = Number(percent || 0);
+      if (value >= 0.95) return "#b42318";
+      if (value >= 0.82) return "#c2410c";
+      if (value >= 0.68) return "#b7791f";
+      return "#16815a";
+    }
+
+    function renderContextUsage() {
+      if (!contextUsageLabel || !contextUsageRing) return;
+      const usage = state.contextUsage || null;
+      if (!usage) {
+        contextUsageLabel.textContent = "上下文 --";
+        contextUsageRing.style.setProperty("--context-used", "0deg");
+        contextUsageRing.style.setProperty("--context-color", "var(--muted)");
+        if (contextUsagePercent) contextUsagePercent.textContent = "--";
+        if (contextUsageTotal) contextUsageTotal.textContent = "已用 -- 标记，共 --";
+        if (contextUsageMeta) contextUsageMeta.textContent = "等待上下文数据";
+        if (contextUsageSections) contextUsageSections.innerHTML = "";
+        if (contextUsageBtn) contextUsageBtn.title = "上下文窗口尚未加载";
+        return;
+      }
+
+      const usedTokens = Number(usage.usedTokens || 0);
+      const maxTokens = Number(usage.maxTokens || 0);
+      const usedPercent = maxTokens > 0 ? usedTokens / maxTokens : Number(usage.usedPercent || 0);
+      const clampedPercent = Math.max(0, Math.min(1, usedPercent));
+      const percentText = formatPercent(usedPercent);
+      const usedText = formatCompactTokens(usedTokens);
+      const maxText = maxTokens ? formatCompactTokens(maxTokens) : "--";
+      const color = contextUsageColor(usedPercent);
+
+      contextUsageLabel.textContent = `上下文 ${percentText}`;
+      contextUsageRing.style.setProperty("--context-used", `${Math.round(clampedPercent * 360)}deg`);
+      contextUsageRing.style.setProperty("--context-color", color);
+      if (contextUsagePercent) contextUsagePercent.textContent = percentText;
+      if (contextUsageTotal) contextUsageTotal.textContent = `已用 ${usedText} 标记，共 ${maxText}`;
+      if (contextUsageBtn) {
+        contextUsageBtn.title = `背景信息窗口：${percentText} 已用，已用 ${usedText} 标记，共 ${maxText}`;
+      }
+
+      const model = usage.model || {};
+      const modelLabel = model.provider_name && model.name
+        ? `${model.provider_name}/${model.name}`
+        : "默认窗口";
+      if (contextUsageMeta) {
+        contextUsageMeta.textContent = `${modelLabel} · ${usage.estimate ? "估算值" : "精确值"}`;
+      }
+
+      if (!contextUsageSections) return;
+      const stableIds = new Set(["system", "tools", "skills", "instructions", "project", "history"]);
+      const rows = (usage.sections || []).filter((section) => (
+        Number(section.tokens || 0) > 0 || stableIds.has(section.id)
+      ));
+      contextUsageSections.innerHTML = rows.map((section) => {
+        const id = String(section.id || "");
+        const sectionPercent = Number(section.percent || 0);
+        const width = Math.max(0, Math.min(100, sectionPercent * 100));
+        const visibleWidth = Number(section.tokens || 0) > 0 ? Math.max(width, 2) : 0;
+        const label = CONTEXT_SECTION_LABELS[id] || section.label || id || "Other";
+        const sectionColor = CONTEXT_SECTION_COLORS[id] || "var(--accent)";
+        return `
+          <div class="context-section-row">
+            <strong>${escapeHtml(label)}</strong>
+            <span>${formatCompactTokens(section.tokens)} · ${formatPercent(sectionPercent)}</span>
+            <div class="context-section-bar" aria-hidden="true">
+              <div class="context-section-fill" style="--section-width:${visibleWidth}%;--section-color:${escapeHtml(sectionColor)}"></div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function setContextUsageOpen(open) {
+      if (!contextUsageShell || !contextUsagePopover || !contextUsageBtn) return;
+      contextUsageShell.classList.toggle("open", Boolean(open));
+      contextUsagePopover.setAttribute("aria-hidden", open ? "false" : "true");
+      contextUsageBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+
+    async function loadContextUsage(force = false) {
+      if (!DAEMON_BASE_URL || !state.context) {
+        state.contextUsage = null;
+        renderContextUsage();
+        return;
+      }
+      const api = getApi();
+      if (!api || !api.get_context_usage) {
+        state.contextUsage = null;
+        renderContextUsage();
+        return;
+      }
+
+      const requestId = state.contextUsageRequestId + 1;
+      state.contextUsageRequestId = requestId;
+      try {
+        const result = await api.get_context_usage(promptInput?.value || "");
+        if (requestId !== state.contextUsageRequestId) return;
+        if (!result.ok) throw new Error(result.error || "读取上下文窗口失败");
+        state.contextUsage = result.usage || null;
+        renderContextUsage();
+      } catch (error) {
+        if (requestId !== state.contextUsageRequestId) return;
+        if (force) console.warn("Failed to load context usage", error);
+      }
+    }
+
+    function scheduleContextUsageRefresh(delay = 350) {
+      window.clearTimeout(state.contextUsageTimer);
+      state.contextUsageTimer = window.setTimeout(() => {
+        loadContextUsage(false).catch((error) => console.warn("Context usage refresh failed", error));
+      }, delay);
+    }
+
     function dayToUtcDate(day) {
       const [year, month, date] = String(day || "").split("-").map(Number);
       return new Date(Date.UTC(year || 1970, (month || 1) - 1, date || 1));
@@ -4621,7 +6169,8 @@
     function defaultProjectName(mode = state.agentMode) {
       const now = new Date();
       const pad = (value) => String(value).padStart(2, "0");
-      const prefix = normalizeAgentMode(mode) === "universal" ? "工作区" : "地图工程";
+      const normalizedMode = normalizeAgentMode(mode);
+      const prefix = normalizedMode === "ra3" ? "地图工程" : "工作区";
       return `${prefix} ${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}-${pad(now.getMinutes())}`;
     }
 
@@ -4635,8 +6184,13 @@
       return cleaned || defaultProjectName(mode);
     }
 
-    function projectDirectoryRoot() {
+    function projectDirectoryRoot(mode = state.agentMode) {
       const snapshot = state.projects || previewProjectsSnapshot();
+      const roots = snapshot.projectRoots || {};
+      const normalizedMode = normalizeAgentMode(mode);
+      if (normalizedMode === "ra3" && roots.ra3) return String(roots.ra3).trim();
+      if (normalizedMode === "universal" && roots.universal) return String(roots.universal).trim();
+      if (normalizedMode === "assistant" && roots.universal) return String(roots.universal).trim();
       return String(snapshot.projectsDir || "").trim();
     }
 
@@ -4647,7 +6201,7 @@
     }
 
     function suggestedProjectPath(name, mode = state.agentMode) {
-      return joinDirectory(projectDirectoryRoot(), sanitizePathSegment(name || defaultProjectName(mode), mode));
+      return joinDirectory(projectDirectoryRoot(mode), sanitizePathSegment(name || defaultProjectName(mode), mode));
     }
 
     function syncProjectPathWithName() {
@@ -4661,6 +6215,10 @@
     function previewProjectsSnapshot() {
       return {
         projectsDir: "%APPDATA%\\Ra3Copilot\\projects",
+        projectRoots: {
+          ra3: "%APPDATA%\\Ra3Copilot\\projects\\maps",
+          universal: "%APPDATA%\\Ra3Copilot\\projects\\workspaces"
+        },
         defaultProject: {
           id: "default",
           name: "默认工程",
@@ -4671,7 +6229,8 @@
           hidden: false
         },
         currentProject: null,
-        recentProjects: []
+        recentProjects: [],
+        imBoundProjects: []
       };
     }
 
@@ -4682,19 +6241,71 @@
       return "地图工程";
     }
 
+    function projectKindLabel(kind) {
+      return projectBadgeText({ kind });
+    }
+
+    function windowTitleParts(context = state.context) {
+      const project = context?.project || null;
+      const projectName = String(project?.name || "").trim();
+      if (projectName) {
+        const kindLabel = projectKindLabel(project.kind);
+        return {
+          title: projectName,
+          subtitle: `Ra3Copilot · ${kindLabel}`,
+          nativeTitle: `${projectName} - Ra3Copilot`
+        };
+      }
+      return {
+        title: "Ra3Copilot",
+        subtitle: "工作台",
+        nativeTitle: "Ra3Copilot 工作台"
+      };
+    }
+
+    function updateWindowTitle(context = state.context) {
+      const parts = windowTitleParts(context);
+      if (windowTitleText) windowTitleText.textContent = parts.title;
+      if (windowSubtitleText) windowSubtitleText.textContent = parts.subtitle;
+      document.title = parts.nativeTitle;
+
+      const bridge = localBridge();
+      if (bridge && typeof bridge.set_window_title === "function") {
+        Promise.resolve(bridge.set_window_title(parts.nativeTitle)).catch(() => {});
+      }
+    }
+
+    function imIntegrationBadgeText(project) {
+      const integrations = Array.isArray(project?.imIntegrations) ? project.imIntegrations : [];
+      if (!integrations.length) return projectBadgeText(project);
+      return integrations.map((item) => {
+        const count = Number(item.count || 0);
+        return `${item.label || item.type || "IM"}${count > 1 ? ` ×${count}` : ""}`;
+      }).join(" · ");
+    }
+
     function recentProjectsForMode(mode, projects) {
       const normalizedMode = normalizeAgentMode(mode);
       const items = Array.isArray(projects) ? projects : [];
       if (normalizedMode === "ra3") {
         return items.filter((project) => String(project?.kind || "map").toLowerCase() === "map");
       }
-      return items;
+      if (normalizedMode === "assistant") {
+        const snapshot = state.projects || previewProjectsSnapshot();
+        return Array.isArray(snapshot.imBoundProjects) ? snapshot.imBoundProjects : [];
+      }
+      return items.filter((project) => String(project?.kind || "").toLowerCase() === "workspace");
     }
 
     function recentEmptyText(mode) {
-      return normalizeAgentMode(mode) === "ra3"
-        ? "还没有最近打开的地图工程。可以直接进入默认工程，或创建一个新工程。"
-        : "还没有最近打开的工作区。可以直接进入默认工作区，或创建一个新工作区。";
+      const normalizedMode = normalizeAgentMode(mode);
+      if (normalizedMode === "ra3") {
+        return "还没有最近打开的地图工程。可以直接进入默认工程，或创建一个新工程。";
+      }
+      if (normalizedMode === "assistant") {
+        return "还没有项目接入 IM。先打开任意项目，然后在设置里的“当前工作区 / IM 接入”添加 QQ Bot 绑定。";
+      }
+      return "还没有最近打开的工作区。可以直接进入默认工作区，或创建一个新工作区。";
     }
 
     function renderRecentProjectsFor(mode, container) {
@@ -4713,7 +6324,7 @@
               <strong>${escapeHtml(project.name || project.id)}</strong>
               <span>上次打开：${escapeHtml(formatProjectTime(project.last_opened_at))}</span>
             </span>
-            <span class="settings-badge">${escapeHtml(projectBadgeText(project))}</span>
+            <span class="settings-badge">${escapeHtml(normalizeAgentMode(mode) === "assistant" ? imIntegrationBadgeText(project) : projectBadgeText(project))}</span>
           </button>
           <span class="recent-actions">
             <button class="ghost-btn" type="button" data-open-project="${escapeHtml(project.id)}">打开</button>
@@ -4730,10 +6341,53 @@
       });
     }
 
+    function agentModeForProject(project) {
+      const kind = String(project?.kind || "").toLowerCase();
+      if (kind === "workspace") return "universal";
+      return "ra3";
+    }
+
+    function renderHomeRecentProjects() {
+      if (!homeRecentProjectsList) return;
+      const snapshot = state.projects || previewProjectsSnapshot();
+      const projects = Array.isArray(snapshot.recentProjects)
+        ? snapshot.recentProjects.slice(0, 5)
+        : [];
+      if (!projects.length) {
+        homeRecentProjectsList.innerHTML = `<div class="recent-empty">还没有最近项目。可以先打开文件夹、打开 RA3 地图或进入功能场景。</div>`;
+        return;
+      }
+
+      homeRecentProjectsList.innerHTML = projects.map((project) => `
+        <div class="recent-project">
+          <button class="provider-main" type="button" data-open-project="${escapeHtml(project.id)}" data-agent-mode="${escapeHtml(agentModeForProject(project))}">
+            <span class="recent-project-main">
+              <strong>${escapeHtml(project.name || project.id)}</strong>
+              <span>上次打开：${escapeHtml(formatProjectTime(project.last_opened_at))}</span>
+            </span>
+            <span class="settings-badge">${escapeHtml(projectBadgeText(project))}</span>
+          </button>
+          <span class="recent-actions">
+            <button class="ghost-btn" type="button" data-open-project="${escapeHtml(project.id)}" data-agent-mode="${escapeHtml(agentModeForProject(project))}">打开</button>
+            <button class="danger-btn" type="button" data-remove-project="${escapeHtml(project.id)}">移除</button>
+          </span>
+        </div>
+      `).join("");
+
+      homeRecentProjectsList.querySelectorAll("[data-open-project]").forEach((button) => {
+        button.addEventListener("click", () => openProjectAndChat(button.dataset.openProject, button.dataset.agentMode));
+      });
+      homeRecentProjectsList.querySelectorAll("[data-remove-project]").forEach((button) => {
+        button.addEventListener("click", () => removeProjectFromRecent(button.dataset.removeProject));
+      });
+    }
+
     function renderRecentProjects() {
       if (projectsDirLabel) projectsDirLabel.textContent = "";
+      renderHomeRecentProjects();
       renderRecentProjectsFor("ra3", recentProjectsList);
       renderRecentProjectsFor("universal", universalRecentProjectsList);
+      renderRecentProjectsFor("assistant", assistantRecentProjectsList);
     }
 
     function applyProjectsSnapshot(snapshot) {
@@ -4744,6 +6398,20 @@
     function applyHistorySnapshot(snapshot) {
       state.history = Array.isArray(snapshot) ? snapshot.slice() : [];
       renderConversationList();
+    }
+
+    function setActiveConversationId(conversationId) {
+      const id = String(conversationId || "").trim();
+      if (!id) return;
+      if (!state.context) state.context = {};
+      if (state.context.threadId !== id) {
+        state.context.threadId = id;
+        state.conversationUsage = null;
+        state.conversationUsageId = "";
+        renderConversationUsage();
+      }
+      renderConversationList();
+      scheduleContextUsageRefresh(0);
     }
 
     async function loadHistory() {
@@ -4826,6 +6494,10 @@
     function codeLanguageForPath(path) {
       const ext = fileBaseName(path).toLowerCase().split(".").pop() || "";
       const map = {
+        c: "c",
+        cc: "cpp",
+        cpp: "cpp",
+        cs: "csharp",
         lua: "lua",
         json: "json",
         xml: "xml",
@@ -4838,9 +6510,10 @@
         markdown: "markdown",
         js: "javascript",
         jsx: "javascript",
-        ts: "javascript",
-        tsx: "javascript",
+        ts: "typescript",
+        tsx: "typescript",
         py: "python",
+        ps1: "powershell",
         css: "css",
         html: "xml",
         htm: "xml",
@@ -4858,7 +6531,12 @@
         yaml: "YAML",
         markdown: "Markdown",
         javascript: "JavaScript",
+        typescript: "TypeScript",
+        c: "C",
+        cpp: "C++",
+        csharp: "C#",
         python: "Python",
+        powershell: "PowerShell",
         css: "CSS",
         text: "Text"
       };
@@ -4882,14 +6560,53 @@
         markdown: "markdown",
         js: "javascript",
         jsx: "javascript",
-        ts: "javascript",
-        tsx: "javascript",
+        ts: "typescript",
+        tsx: "typescript",
         py: "python",
         python: "python",
+        ps1: "powershell",
+        powershell: "powershell",
+        c: "c",
+        cc: "cpp",
+        cpp: "cpp",
+        cs: "csharp",
+        csharp: "csharp",
         css: "css",
         text: "text"
       };
       return aliases[value] || "text";
+    }
+
+    function codeMirrorModeForLanguage(language) {
+      switch (normalizeCodeLanguage(language)) {
+        case "json":
+          return { name: "javascript", json: true };
+        case "javascript":
+          return "javascript";
+        case "typescript":
+          return { name: "javascript", typescript: true };
+        case "xml":
+          return "htmlmixed";
+        case "markdown":
+          return "markdown";
+        case "c":
+          return "text/x-csrc";
+        case "cpp":
+          return "text/x-c++src";
+        case "csharp":
+          return "text/x-csharp";
+        case "python":
+          return "python";
+        case "powershell":
+          return "powershell";
+        case "css":
+          return "css";
+        case "ini":
+        case "yaml":
+        case "text":
+        default:
+          return "text/plain";
+      }
     }
 
     function escapeAttribute(value) {
@@ -4905,88 +6622,28 @@
       return `<span class="${className}">${value}</span>`;
     }
 
-    function highlightLua(code) {
-      const escaped = escapeCode(code);
-      const keywords = "(?:and|break|do|else|elseif|end|false|for|function|goto|if|in|local|nil|not|or|repeat|return|then|true|until|while)";
-      const pattern = new RegExp(`(--\\[\\[[\\s\\S]*?\\]\\]|--[^\\n]*|"(?:\\\\.|[^"\\\\])*"|'(?:\\\\.|[^'\\\\])*'|\\b0x[0-9a-fA-F]+\\b|\\b\\d+(?:\\.\\d+)?\\b|\\b${keywords}\\b)`, "g");
-      return escaped.replace(pattern, (token) => {
-        if (token.startsWith("--")) return tokenSpan("tok-comment", token);
-        if (token.startsWith("\"") || token.startsWith("'")) return tokenSpan("tok-string", token);
-        if (/^(?:true|false|nil)$/.test(token)) return tokenSpan("tok-bool", token);
-        if (/^(?:0x[0-9a-fA-F]+|\d)/.test(token)) return tokenSpan("tok-number", token);
-        return tokenSpan("tok-keyword", token);
-      });
+    function highlightLanguageName(language) {
+      const normalized = normalizeCodeLanguage(language);
+      return normalized === "text" ? "plaintext" : normalized;
     }
 
-    function highlightJson(code) {
-      const escaped = escapeCode(code);
-      return escaped.replace(/("(?:\\.|[^"\\])*"|\btrue\b|\bfalse\b|\bnull\b|-?\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b)/g, (token) => {
-        if (token.startsWith("\"")) return tokenSpan("tok-string", token);
-        if (/^(?:true|false|null)$/.test(token)) return tokenSpan("tok-bool", token);
-        return tokenSpan("tok-number", token);
-      });
-    }
-
-    function highlightMarkup(code) {
-      const escaped = escapeCode(code);
-      return escaped
-        .replace(/(&lt;!--[\s\S]*?--&gt;)/g, (token) => tokenSpan("tok-comment", token))
-        .replace(/(&lt;\/?)([A-Za-z_][\w:.-]*)([\s\S]*?)(\/?&gt;)/g, (_, open, name, rest, close) => {
-          const attrs = rest.replace(/([A-Za-z_:][\w:.-]*)(=)("[^"]*"|'[^']*')/g, (_attr, attrName, equals, attrValue) => {
-            return `${tokenSpan("tok-attr", attrName)}${tokenSpan("tok-punctuation", equals)}${tokenSpan("tok-string", attrValue)}`;
-          });
-          return `${tokenSpan("tok-punctuation", open)}${tokenSpan("tok-tag", name)}${attrs}${tokenSpan("tok-punctuation", close)}`;
-        });
-    }
-
-    function highlightIni(code) {
-      return escapeCode(code).split("\n").map((line) => {
-        if (/^\s*[;#]/.test(line)) return tokenSpan("tok-comment", line);
-        if (/^\s*\[[^\]]+\]/.test(line)) return tokenSpan("tok-meta", line);
-        return line.replace(/^(\s*[\w.-]+\s*)(=|:)(.*)$/g, (_match, key, equals, value) => {
-          return `${tokenSpan("tok-attr", key)}${tokenSpan("tok-punctuation", equals)}${tokenSpan("tok-string", value)}`;
-        });
-      }).join("\n");
-    }
-
-    function highlightYaml(code) {
-      return escapeCode(code).split("\n").map((line) => {
-        if (/^\s*#/.test(line)) return tokenSpan("tok-comment", line);
-        return line
-          .replace(/^(\s*[-]?\s*[\w.-]+\s*)(:)(.*)$/g, (_match, key, colon, value) => {
-            return `${tokenSpan("tok-attr", key)}${tokenSpan("tok-punctuation", colon)}${value}`;
-          })
-          .replace(/\b(true|false|null)\b/g, (token) => tokenSpan("tok-bool", token))
-          .replace(/\b\d+(?:\.\d+)?\b/g, (token) => tokenSpan("tok-number", token));
-      }).join("\n");
-    }
-
-    function highlightMarkdown(code) {
-      return escapeCode(code).split("\n").map((line) => {
-        if (/^\s*#{1,6}\s/.test(line)) return tokenSpan("tok-heading", line);
-        if (/^\s*```/.test(line)) return tokenSpan("tok-meta", line);
-        if (/^\s*&gt;/.test(line)) return tokenSpan("tok-comment", line);
-        return line.replace(/`([^`]+)`/g, (_match, token) => tokenSpan("tok-string", `\`${token}\``));
-      }).join("\n");
-    }
-
-    function highlightGenericCode(code) {
-      return escapeCode(code).split("\n").map((line) => {
-        if (/^\s*(\/\/|#|;)/.test(line)) return tokenSpan("tok-comment", line);
-        return line
-          .replace(/("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/g, (token) => tokenSpan("tok-string", token))
-          .replace(/\b\d+(?:\.\d+)?\b/g, (token) => tokenSpan("tok-number", token));
-      }).join("\n");
+    function codeClassForLanguage(language) {
+      return `hljs language-${highlightLanguageName(language)}`;
     }
 
     function highlightCode(code, language) {
-      if (language === "lua") return highlightLua(code);
-      if (language === "json") return highlightJson(code);
-      if (language === "xml") return highlightMarkup(code);
-      if (language === "ini") return highlightIni(code);
-      if (language === "yaml") return highlightYaml(code);
-      if (language === "markdown") return highlightMarkdown(code);
-      return highlightGenericCode(code);
+      const value = String(code ?? "");
+      const highlighter = window.hljs;
+      const highlightLanguage = highlightLanguageName(language);
+      if (!highlighter || typeof highlighter.highlight !== "function") return escapeCode(value);
+      try {
+        if (highlightLanguage !== "plaintext" && highlighter.getLanguage(highlightLanguage)) {
+          return highlighter.highlight(value, { language: highlightLanguage, ignoreIllegals: true }).value;
+        }
+      } catch {
+        // Fall through to escaped plaintext when a grammar rejects the input.
+      }
+      return escapeCode(value);
     }
 
     function renderMarkdownInline(text) {
@@ -5053,7 +6710,7 @@
             index += 1;
           }
           if (index < lines.length) index += 1;
-          html.push(`<pre><code>${highlightCode(codeLines.join("\n"), language)}</code></pre>`);
+          html.push(`<pre><code class="${escapeAttribute(codeClassForLanguage(language))}">${highlightCode(codeLines.join("\n"), language)}</code></pre>`);
           continue;
         }
 
@@ -5130,7 +6787,9 @@
     function toggleProjectFolder(path) {
       state.selectedFilePath = path || "";
       state.selectedFileType = "folder";
-      if (!path) return;
+      // The project root node uses "" as its path; allow it to toggle. Only
+      // bail when no path argument was passed at all.
+      if (path === undefined || path === null) return;
       if (state.expandedFileFolders.has(path)) {
         state.expandedFileFolders.delete(path);
       } else {
@@ -5268,17 +6927,419 @@
       if (filesActive) loadProjectFiles().catch((error) => showToast(error.message || "读取文件树失败"));
     }
 
+    // --- Side panel: tab registry (extensible) ----------------------------
+    // The panel hosts multiple tabs. Each tab kind maps to a shared "pane" DOM
+    // node (tool -> #toolDetailView, file -> #fileDetailView) and a renderer
+    // that fills it. Tabs are keyed so the same file/tool reuses one tab.
+    //
+    // To add a new content type later (diff, history, logs...): register a
+    // pane element + a render function here, then call openTab(kind, ...).
+    const panelTabList = []; // { key, kind, title, el, dirty }
+    const panelPanes = {
+      tool: toolDetailView,
+      file: fileDetailView,
+      terminal: terminalDetailView,
+    };
+    let panelActiveKey = null;
+
+    function paneForKind(kind) {
+      return panelPanes[kind] || null;
+    }
+
+    function showPanel() {
+      document.querySelector(".workspace").classList.remove("panel-hidden");
+      updatePanelToggleButton();
+    }
+    function hidePanel() {
+      document.querySelector(".workspace").classList.add("panel-hidden");
+      closePanelAddMenu();
+      updatePanelToggleButton();
+    }
+    function panelVisible() {
+      return !document.querySelector(".workspace").classList.contains("panel-hidden");
+    }
+
+    function updatePanelToggleButton() {
+      if (!togglePanelBtn) return;
+      const visible = panelVisible();
+      togglePanelBtn.classList.toggle("active", visible);
+      togglePanelBtn.classList.toggle("panel-visible-state", visible);
+      togglePanelBtn.classList.toggle("panel-hidden-state", !visible);
+      togglePanelBtn.setAttribute("aria-pressed", String(visible));
+      const label = visible ? "隐藏右侧面板" : "显示右侧面板";
+      togglePanelBtn.setAttribute("aria-label", label);
+      togglePanelBtn.title = label;
+    }
+
+    function togglePanelVisibility() {
+      if (panelVisible()) {
+        hidePanel();
+        return;
+      }
+      if (panelActiveKey && panelTabList.some((tab) => tab.key === panelActiveKey)) {
+        activatePanelTab(panelActiveKey);
+      } else if (panelTabList.length) {
+        activatePanelTab(panelTabList[panelTabList.length - 1].key);
+      } else {
+        openTerminalTab();
+      }
+    }
+
+    function renderPanelTabs() {
+      // Keep the toolbar (close button) as the last child; tabs go before it.
+      const toolbar = panelTabs.querySelector(".panel-toolbar");
+      panelTabs.querySelectorAll(".panel-tab").forEach((el) => el.remove());
+      panelTabList.forEach((tab) => {
+        const el = document.createElement("div");
+        el.className = "panel-tab" + (tab.key === panelActiveKey ? " active" : "") + (tab.dirty ? " dirty" : "");
+        el.setAttribute("role", "tab");
+        el.setAttribute("data-tab-key", tab.key);
+        const icon = tab.kind === "terminal" ? "&gt;_" : tab.kind === "file" ? "#" : "●";
+        el.innerHTML = `<span aria-hidden="true">${icon}</span><span class="panel-tab-label" title="${escapeHtml(tab.title)}">${escapeHtml(tab.title)}</span><button class="panel-tab-close" type="button" aria-label="关闭标签">×</button>`;
+        el.addEventListener("click", (event) => {
+          if (event.target.classList.contains("panel-tab-close")) {
+            event.stopPropagation();
+            closePanelTab(tab.key);
+            return;
+          }
+          activatePanelTab(tab.key);
+        });
+        panelTabs.insertBefore(el, toolbar);
+      });
+    }
+
+    function activatePanelTab(key) {
+      const tab = panelTabList.find((t) => t.key === key);
+      if (!tab) return;
+      panelActiveKey = key;
+      // Show the pane for this tab's kind, hide others.
+      Object.entries(panelPanes).forEach(([kind, pane]) => {
+        if (kind === tab.kind) pane.classList.remove("hidden");
+        else pane.classList.add("hidden");
+      });
+      // Re-render the active tab's content into its pane (panes are shared).
+      if (typeof tab.render === "function") tab.render();
+      renderPanelTabs();
+      showPanel();
+    }
+
+    function openPanelTab(kind, key, title, render) {
+      let tab = panelTabList.find((t) => t.key === key);
+      if (tab) {
+        tab.title = title;
+        tab.render = render;
+      } else {
+        tab = { key, kind, title, render, dirty: false };
+        panelTabList.push(tab);
+      }
+      activatePanelTab(tab.key);
+      return tab;
+    }
+
+    function closePanelTab(key) {
+      const idx = panelTabList.findIndex((t) => t.key === key);
+      if (idx < 0) return;
+      const wasActive = panelActiveKey === key;
+      const [closed] = panelTabList.splice(idx, 1);
+      if (closed?.kind === "terminal") {
+        state.terminalSessions.delete(closed.key);
+      }
+      if (wasActive) {
+        if (panelTabList.length) {
+          activatePanelTab(panelTabList[Math.max(0, idx - 1)].key);
+        } else {
+          panelActiveKey = null;
+          hidePanel();
+        }
+      }
+      renderPanelTabs();
+    }
+
+    function setPanelTabDirty(key, dirty) {
+      const tab = panelTabList.find((t) => t.key === key);
+      if (!tab) return;
+      tab.dirty = !!dirty;
+      renderPanelTabs();
+    }
+
+    function activePanelTabKey() {
+      return panelActiveKey;
+    }
+
+    function activePanelTabKind() {
+      const tab = panelTabList.find((t) => t.key === panelActiveKey);
+      return tab ? tab.kind : null;
+    }
+
+    function clearPanelTabs() {
+      panelTabList.length = 0;
+      panelActiveKey = null;
+      renderPanelTabs();
+      hidePanel();
+    }
+
+    // --- Side panel: resize (drag the left edge, persist width) -----------
+    const PANEL_WIDTH_KEY = "ra3.panel.width";
+    const PANEL_MIN_WIDTH = 300;
+    const PANEL_MAX_RATIO = 0.6;
+
+    function applyPanelWidth(width) {
+      const clamped = Math.max(PANEL_MIN_WIDTH, Math.min(width, window.innerWidth * PANEL_MAX_RATIO));
+      sidePanel.style.setProperty("--panel-width", `${Math.round(clamped)}px`);
+    }
+
+    function initPanelWidth() {
+      const saved = Number(localStorage.getItem(PANEL_WIDTH_KEY));
+      applyPanelWidth(saved && saved > 0 ? saved : 460);
+    }
+
+    function initPanelResizer() {
+      let dragging = false;
+      let startX = 0;
+      let startWidth = 0;
+      panelResizer.addEventListener("mousedown", (event) => {
+        dragging = true;
+        startX = event.clientX;
+        startWidth = sidePanel.getBoundingClientRect().width;
+        panelResizer.classList.add("dragging");
+        document.body.style.cursor = "col-resize";
+        event.preventDefault();
+      });
+      document.addEventListener("mousemove", (event) => {
+        if (!dragging) return;
+        // Dragging left (smaller clientX) widens the panel (right column).
+        applyPanelWidth(startWidth + (startX - event.clientX));
+      });
+      document.addEventListener("mouseup", () => {
+        if (!dragging) return;
+        dragging = false;
+        panelResizer.classList.remove("dragging");
+        document.body.style.cursor = "";
+        localStorage.setItem(PANEL_WIDTH_KEY, String(sidePanel.getBoundingClientRect().width));
+      });
+    }
+
+    function closePanelAddMenu() {
+      if (panelAddMenu) panelAddMenu.hidden = true;
+    }
+
+    function openPanelAddMenu() {
+      if (!panelAddMenu || !panelAddTabBtn) return;
+      panelMenuOpenSelectedFile.disabled = !(state.selectedFilePath && state.selectedFileType === "file");
+      const rect = panelAddTabBtn.getBoundingClientRect();
+      closeHistoryContextMenu();
+      closeFileContextMenu();
+      positionContextMenu(panelAddMenu, rect.left, rect.bottom + 4);
+    }
+
+    function terminalDefaultCommand() {
+      const platform = String(navigator.platform || "").toLowerCase();
+      return platform.includes("win") ? "dir" : "ls";
+    }
+
+    function terminalProjectPath() {
+      return state.context?.project?.path || "";
+    }
+
+    function terminalSessionForKey(key = panelActiveKey) {
+      return state.terminalSessions.get(key || "");
+    }
+
+    function terminalEntryHtml(entry) {
+      const className = entry.kind === "error"
+        ? "terminal-error"
+        : entry.kind === "success"
+          ? "terminal-success"
+          : entry.kind === "meta" || entry.kind === "command"
+            ? "terminal-muted"
+            : "";
+      return `<span class="${className}">${escapeHtml(entry.text || "")}</span>`;
+    }
+
+    function appendTerminalEntry(session, kind, text) {
+      session.entries.push({ kind, text: String(text || "") });
+    }
+
+    function renderTerminalPane(key = panelActiveKey) {
+      const session = terminalSessionForKey(key);
+      if (!session) return;
+      terminalTitle.textContent = session.title;
+      terminalCwd.textContent = session.cwd || terminalProjectPath() || "未选择工作区";
+      terminalOutput.innerHTML = session.entries.length
+        ? session.entries.map(terminalEntryHtml).join("\n")
+        : `<span class="terminal-muted">${escapeHtml(session.cwd || "当前工作区")}</span>`;
+      terminalRunBtn.disabled = Boolean(session.running);
+      terminalCommandInput.disabled = Boolean(session.running);
+      terminalCommandInput.value = session.command || "";
+      window.requestAnimationFrame(() => {
+        terminalOutput.scrollTop = terminalOutput.scrollHeight;
+      });
+    }
+
+    function openTerminalTab() {
+      state.terminalCounter += 1;
+      const key = `terminal:${Date.now()}:${state.terminalCounter}`;
+      const title = state.terminalCounter === 1 ? "终端" : `终端 ${state.terminalCounter}`;
+      const cwd = terminalProjectPath();
+      const session = {
+        key,
+        title,
+        cwd,
+        command: terminalDefaultCommand(),
+        running: false,
+        entries: [
+          { kind: "meta", text: cwd ? `# ${cwd}` : "# 未选择工作区" },
+        ],
+      };
+      state.terminalSessions.set(key, session);
+      openPanelTab("terminal", key, title, () => renderTerminalPane(key));
+      terminalCommandInput.focus();
+    }
+
+    async function runActiveTerminalCommand() {
+      const session = terminalSessionForKey();
+      if (!session || session.running) return;
+      const command = terminalCommandInput.value.trim();
+      if (!command) {
+        terminalCommandInput.focus();
+        return;
+      }
+      if (!state.context?.project) {
+        showToast("请先打开一个工作区");
+        return;
+      }
+      const api = getApi();
+      if (!api || !api.run_terminal_command) {
+        showToast("桌面桥尚未就绪");
+        return;
+      }
+
+      session.command = command;
+      session.running = true;
+      appendTerminalEntry(session, "command", `> ${command}`);
+      renderTerminalPane(session.key);
+
+      try {
+        const result = await api.run_terminal_command(command);
+        if (!result.ok) {
+          appendTerminalEntry(session, "error", result.error || "命令执行失败");
+        } else {
+          if (result.stdout) appendTerminalEntry(session, "output", result.stdout.replace(/\s+$/g, ""));
+          if (result.stderr) appendTerminalEntry(session, "error", result.stderr.replace(/\s+$/g, ""));
+          const statusText = result.timedOut
+            ? "timeout"
+            : `exit ${result.exitCode}`;
+          appendTerminalEntry(session, result.exitCode === 0 ? "success" : "meta", `[${statusText}]`);
+        }
+      } catch (error) {
+        appendTerminalEntry(session, "error", error?.message || String(error));
+      } finally {
+        session.running = false;
+        if (activePanelTabKey() === session.key) renderTerminalPane(session.key);
+      }
+    }
+
     function showToolDetailView() {
       toolDetailView.classList.remove("hidden");
       fileDetailView.classList.add("hidden");
+      terminalDetailView.classList.add("hidden");
     }
 
     function showFileDetailView() {
       toolDetailView.classList.add("hidden");
       fileDetailView.classList.remove("hidden");
+      terminalDetailView.classList.add("hidden");
     }
 
-    function setFileViewMode(mode) {
+    function filePreviewScrollElement() {
+      return codeLanguageForPath(state.selectedFilePath) === "markdown" ? fileMarkdownPreview : fileCodePreview;
+    }
+
+    function activeFileScrollElement() {
+      return state.fileViewMode === "edit" ? fileEditor : filePreviewScrollElement();
+    }
+
+    function ensureFileCodeEditor() {
+      if (fileCodeEditor || !window.CodeMirror) return fileCodeEditor;
+      fileCodeEditor = window.CodeMirror.fromTextArea(fileEditor, {
+        autofocus: false,
+        indentUnit: 2,
+        lineNumbers: false,
+        lineWrapping: false,
+        mode: codeMirrorModeForLanguage(codeLanguageForPath(state.selectedFilePath)),
+        readOnly: fileEditor.readOnly,
+        tabSize: 2,
+        theme: "ra3-github"
+      });
+      fileCodeEditor.on("change", (editor) => {
+        if (syncingFileEditor) return;
+        fileEditor.value = editor.getValue();
+        updateFileDirty(true);
+        updateCodePreview();
+      });
+      fileCodeEditor.on("scroll", (editor) => {
+        const info = editor.getScrollInfo();
+        state.fileScrollTop = info.top || 0;
+        state.fileScrollLeft = info.left || 0;
+      });
+      return fileCodeEditor;
+    }
+
+    function getFileEditorValue() {
+      return fileCodeEditor ? fileCodeEditor.getValue() : (fileEditor.value || "");
+    }
+
+    function setFileEditorValue(value) {
+      const text = String(value ?? "");
+      fileEditor.value = text;
+      if (!fileCodeEditor) return;
+      syncingFileEditor = true;
+      try {
+        if (fileCodeEditor.getValue() !== text) fileCodeEditor.setValue(text);
+      } finally {
+        syncingFileEditor = false;
+      }
+    }
+
+    function setFileEditorReadOnly(readOnly) {
+      fileEditor.readOnly = Boolean(readOnly);
+      if (fileCodeEditor) fileCodeEditor.setOption("readOnly", fileEditor.readOnly);
+    }
+
+    function setFileEditorLanguage(language) {
+      if (fileCodeEditor) fileCodeEditor.setOption("mode", codeMirrorModeForLanguage(language));
+    }
+
+    function refreshFileCodeEditor() {
+      if (!fileCodeEditor) return;
+      fileCodeEditor.refresh();
+      setFileEditorLanguage(codeLanguageForPath(state.selectedFilePath));
+    }
+
+    function rememberFileScroll(element = activeFileScrollElement()) {
+      if (!element) return;
+      if (element === fileEditor && fileCodeEditor) {
+        const info = fileCodeEditor.getScrollInfo();
+        state.fileScrollTop = info.top || 0;
+        state.fileScrollLeft = info.left || 0;
+        return;
+      }
+      state.fileScrollTop = element.scrollTop || 0;
+      state.fileScrollLeft = element.scrollLeft || 0;
+    }
+
+    function restoreFileScroll(element = activeFileScrollElement()) {
+      if (!element) return;
+      if (element === fileEditor && fileCodeEditor) {
+        fileCodeEditor.scrollTo(state.fileScrollLeft || 0, state.fileScrollTop || 0);
+        return;
+      }
+      element.scrollTop = state.fileScrollTop || 0;
+      element.scrollLeft = state.fileScrollLeft || 0;
+    }
+
+    function setFileViewMode(mode, options = {}) {
+      if (options.preserveScroll !== false) rememberFileScroll();
       const wantsEdit = mode === "edit" && !fileEditModeBtn.disabled;
       state.fileViewMode = wantsEdit ? "edit" : "preview";
       const previewActive = state.fileViewMode === "preview";
@@ -5292,59 +7353,66 @@
       filePreviewModeBtn.setAttribute("aria-selected", String(previewActive));
       fileEditModeBtn.setAttribute("aria-selected", String(!previewActive));
       if (!previewActive) {
-        syncEditorHighlightScroll();
-        fileEditor.focus();
+        ensureFileCodeEditor();
+        setFileEditorReadOnly(fileEditModeBtn.disabled);
+        setFileEditorLanguage(language);
+        refreshFileCodeEditor();
+      }
+      restoreFileScroll();
+      if (!previewActive) {
+        window.requestAnimationFrame(() => {
+          refreshFileCodeEditor();
+          restoreFileScroll(fileEditor);
+        });
+        if (fileCodeEditor) fileCodeEditor.focus();
+        else fileEditor.focus();
       }
     }
 
     function updateCodePreview() {
       const language = codeLanguageForPath(state.selectedFilePath);
       const code = fileCodePreview.querySelector("code");
-      const editorCode = fileEditorHighlight.querySelector("code");
-      const value = fileEditor.value || "";
-      if (code) code.innerHTML = highlightCode(value, language);
-      if (editorCode) editorCode.innerHTML = highlightCode(value, language) || "\n";
+      const value = getFileEditorValue();
+      const codeClass = codeClassForLanguage(language);
+      if (code) {
+        code.className = codeClass;
+        code.innerHTML = highlightCode(value, language);
+      }
       fileMarkdownPreview.innerHTML = language === "markdown" ? renderMarkdownSafe(value) : "";
       fileCodePreview.setAttribute("data-language", codeLanguageLabel(language));
-      fileEditorHighlight.setAttribute("data-language", codeLanguageLabel(language));
-      syncEditorHighlightScroll();
+      setFileEditorLanguage(language);
     }
 
     function clearCodePreview(message = "选择文件后显示代码预览") {
       const code = fileCodePreview.querySelector("code");
-      const editorCode = fileEditorHighlight.querySelector("code");
-      if (code) code.innerHTML = tokenSpan("tok-comment", escapeCode(message));
-      if (editorCode) editorCode.innerHTML = tokenSpan("tok-comment", escapeCode(message));
+      if (code) {
+        code.className = codeClassForLanguage("text");
+        code.innerHTML = tokenSpan("tok-comment", escapeCode(message));
+      }
+      setFileEditorValue("");
+      setFileEditorReadOnly(true);
       fileMarkdownPreview.innerHTML = `<p class="tok-comment">${escapeCode(message)}</p>`;
       fileCodePreview.setAttribute("data-language", "Text");
-      fileEditorHighlight.setAttribute("data-language", "Text");
       fileEditModeBtn.disabled = true;
       setFileViewMode("preview");
-    }
-
-    function syncEditorHighlightScroll() {
-      fileEditorHighlight.scrollTop = fileEditor.scrollTop;
-      fileEditorHighlight.scrollLeft = fileEditor.scrollLeft;
     }
 
     function updateFileDirty(dirty) {
       state.fileDirty = dirty;
       saveFileBtn.disabled = !dirty || fileEditor.readOnly;
+      // Reflect dirty state on the active file tab (• marker) instead of the
+      // shared tool subtitle, which belongs to tool tabs now.
       if (state.selectedFilePath) {
-        drawerSubtitle.textContent = dirty ? "已修改，尚未保存" : "已保存";
+        setPanelTabDirty("file:" + state.selectedFilePath, dirty);
       }
     }
 
     function renderFileEditor(file) {
+      // Pure renderer: fills the shared file pane. Caller opens/activates the tab.
       state.selectedFilePath = file.path || "";
       state.selectedFileType = "file";
       state.selectedFileEncoding = file.encoding || "utf-8";
       renderProjectFileTree();
-      drawer.dataset.mode = "file";
-      drawer.classList.remove("closed");
-      showFileDetailView();
-      drawerToolName.textContent = file.name || "文件";
-      drawerSubtitle.textContent = file.editable ? "可编辑文本" : "只读预览";
       fileEditorPath.textContent = file.path || file.name || "未命名文件";
       const language = codeLanguageForPath(file.path || file.name || "");
       fileEditorStats.innerHTML = `
@@ -5353,11 +7421,13 @@
         <span>${escapeHtml(codeLanguageLabel(language))}</span>
         <span>${file.editable ? "可编辑" : "只读"}</span>
       `;
-      fileEditor.value = file.content || "";
-      fileEditor.readOnly = !file.editable;
+      setFileEditorValue(file.content || "");
+      setFileEditorReadOnly(!file.editable);
       fileEditModeBtn.disabled = !file.editable;
+      state.fileScrollTop = 0;
+      state.fileScrollLeft = 0;
       updateCodePreview();
-      setFileViewMode("preview");
+      setFileViewMode("preview", { preserveScroll: false });
       updateFileDirty(false);
     }
 
@@ -5366,17 +7436,18 @@
       state.selectedFileType = type || "";
       renderProjectFileTree();
       if (type !== "file") {
-        drawer.dataset.mode = "file";
-        drawer.classList.remove("closed");
-        showFileDetailView();
-        drawerToolName.textContent = fileBaseName(path) || "文件夹";
-        drawerSubtitle.textContent = "选择文件进行预览或编辑";
-        fileEditorPath.textContent = path || "工程根目录";
-        fileEditorStats.innerHTML = `<span>文件夹</span><span>可新建文件或文件夹</span>`;
-        fileEditor.value = "";
-        fileEditor.readOnly = true;
-        clearCodePreview("选择文件后显示代码预览");
-        updateFileDirty(false);
+        // Folder: open a tab showing an empty file pane (no content to edit).
+        const folderName = fileBaseName(path) || "工程根目录";
+        openPanelTab("file", "file:" + (path || ""), folderName, () => {
+          fileEditorPath.textContent = path || "工程根目录";
+          fileEditorStats.innerHTML = `<span>文件夹</span><span>可新建文件或文件夹</span>`;
+          setFileEditorValue("");
+          setFileEditorReadOnly(true);
+          state.fileScrollTop = 0;
+          state.fileScrollLeft = 0;
+          clearCodePreview("选择文件后显示代码预览");
+          updateFileDirty(false);
+        });
         return;
       }
       const api = getApi();
@@ -5389,7 +7460,8 @@
         showToast(result.error || "读取文件失败");
         return;
       }
-      renderFileEditor(result.file);
+      const file = result.file;
+      openPanelTab("file", "file:" + path, file.name || fileBaseName(path) || "文件", () => renderFileEditor(file));
     }
 
     async function refreshProjectFiles() {
@@ -5447,20 +7519,40 @@
       showToast("已重命名");
     }
 
+    function closeDeleteConfirmDialog(choice = "cancel") {
+      deleteConfirmDialog.classList.add("hidden");
+      const resolve = state.deleteChoiceResolve;
+      state.deleteChoiceResolve = null;
+      if (resolve) resolve(choice);
+    }
+
+    function chooseDeleteMode(path, type) {
+      const name = fileBaseName(path);
+      const itemLabel = type === "folder" ? "文件夹" : "文件";
+      deleteConfirmTitle.textContent = `删除${itemLabel}`;
+      deleteConfirmName.textContent = name;
+      deleteConfirmMessage.textContent = type === "folder"
+        ? "请选择删除方式。移入回收站后通常可以恢复；彻底删除会连同内部内容一起删除，且不可恢复。"
+        : "请选择删除方式。移入回收站后通常可以恢复；彻底删除将不可恢复。";
+      deleteConfirmDialog.classList.remove("hidden");
+      return new Promise((resolve) => {
+        state.deleteChoiceResolve = resolve;
+      });
+    }
+
     async function deleteSelectedProjectItem(path = state.selectedFilePath, type = state.selectedFileType) {
       if (!path) {
         showToast("先选择文件或文件夹");
         return;
       }
-      const name = fileBaseName(path);
-      const confirmed = window.confirm(`确定删除「${name}」？文件夹会连同内部内容一起删除。`);
-      if (!confirmed) return;
+      const deleteMode = await chooseDeleteMode(path, type);
+      if (deleteMode === "cancel") return;
       const api = getApi();
       if (!api || !api.delete_project_item) {
         showToast("桌面桥尚未就绪");
         return;
       }
-      const result = await api.delete_project_item(path);
+      const result = await api.delete_project_item(path, deleteMode);
       if (!result.ok) {
         showToast(result.error || "删除失败");
         return;
@@ -5471,8 +7563,8 @@
         state.selectedFileType = "";
       }
       applyFileTree(result.tree);
-      if (drawer.dataset.mode === "file") drawer.classList.add("closed");
-      showToast("已删除");
+      closePanelTab("file:" + path);
+      showToast(deleteMode === "trash" ? "已移入回收站" : "已彻底删除");
     }
 
     async function saveActiveFile() {
@@ -5482,7 +7574,7 @@
         showToast("桌面桥尚未就绪");
         return;
       }
-      const result = await api.save_project_file(state.selectedFilePath, fileEditor.value, state.selectedFileEncoding);
+      const result = await api.save_project_file(state.selectedFilePath, getFileEditorValue(), state.selectedFileEncoding);
       if (!result.ok) {
         showToast(result.error || "保存失败");
         return;
@@ -5586,9 +7678,14 @@
       state.assistantArticle = null;
       state.assistantBody = null;
       state.assistantBuffer = "";
+      state.todos = [];
+      state.todoProgress = null;
       state.tools = new Map();
       Object.keys(toolDetails).forEach((key) => delete toolDetails[key]);
-      drawer.classList.add("closed");
+      // Tool tabs belong to the conversation; drop them but keep file tabs.
+      [...panelTabList].forEach((tab) => {
+        if (tab.kind === "tool") closePanelTab(tab.key);
+      });
     }
 
     function renderConversationMessages(conversation) {
@@ -5629,7 +7726,11 @@
         showToast(result.error || "打开对话失败");
         return;
       }
-      if (result.context) applyContext(result.context, false);
+      if (result.context) {
+        applyContext({ ...result.context, threadId: result.context.threadId || conversationId }, false);
+      } else {
+        setActiveConversationId(conversationId);
+      }
       if (result.history) applyHistorySnapshot(result.history);
       await loadConversationUsage(true).catch((error) => showToast(error.message || String(error)));
       renderConversationMessages(result.conversation);
@@ -5673,6 +7774,7 @@
       agentSelectPane.hidden = false;
       ra3WelcomePane.hidden = true;
       universalWelcomePane.hidden = true;
+      assistantWelcomePane.hidden = true;
     }
 
     function showAgentWelcome(mode) {
@@ -5680,23 +7782,27 @@
       agentSelectPane.hidden = true;
       ra3WelcomePane.hidden = state.agentMode !== "ra3";
       universalWelcomePane.hidden = state.agentMode !== "universal";
+      assistantWelcomePane.hidden = state.agentMode !== "assistant";
       renderRecentProjects();
     }
 
     function showWelcome() {
       state.activeView = "welcome";
+      workspace.classList.remove("settings-mode");
       workspace.classList.add("welcome-mode");
       welcomePane.classList.remove("view-hidden");
       chatPane.classList.add("view-hidden");
       settingsPane.classList.add("view-hidden");
-      drawer.classList.add("closed");
+      hidePanel();
       openSettingsBtn.classList.remove("active");
       showAgentSelection();
       renderRecentProjects();
+      if (!state.context?.project) updateWindowTitle(null);
     }
 
     function showChat() {
       state.activeView = "chat";
+      workspace.classList.remove("settings-mode");
       workspace.classList.remove("welcome-mode");
       welcomePane.classList.add("view-hidden");
       settingsPane.classList.add("view-hidden");
@@ -5712,8 +7818,8 @@
       state.expandedFileFolders.clear();
       state.fileDirty = false;
       closeFileContextMenu();
-      fileEditor.value = "";
-      fileEditor.readOnly = true;
+      setFileEditorValue("");
+      setFileEditorReadOnly(true);
       fileEditorPath.textContent = "未选择文件";
       fileEditorStats.innerHTML = `<span>点击左侧项目文件进行预览</span>`;
       clearCodePreview("点击左侧项目文件进行预览");
@@ -5773,6 +7879,37 @@
         return;
       }
       showToast("已打开项目文件夹");
+    }
+
+    async function revealInFileManager() {
+      // Resolve the absolute path of the right-clicked node and open it in the
+      // OS file manager. Folders open directly; files reveal their parent dir;
+      // the root node (empty path) opens the project root.
+      const project = currentProjectBody();
+      if (!project || !project.path) {
+        showToast("未选择工程");
+        return;
+      }
+      const relPath = (state.fileContextPath || "").trim();
+      const type = state.fileContextType || "folder";
+      // File -> reveal its containing directory.
+      const targetRel = type === "file" && relPath.includes("/")
+        ? relPath.slice(0, relPath.lastIndexOf("/"))
+        : relPath;
+      const absPath = [project.path.replace(/[\\/]+$/, ""), targetRel]
+        .filter((part) => part.length > 0)
+        .join("/");
+      const bridge = localBridge();
+      if (!bridge || typeof bridge.open_project_folder !== "function") {
+        showToast("窗口尚未就绪");
+        return;
+      }
+      const result = await bridge.open_project_folder(absPath);
+      if (!result || !result.ok) {
+        showToast((result && result.error) || "无法打开");
+        return;
+      }
+      showToast("已在文件管理器中打开");
     }
 
     async function openProjectTerminalFromMenu() {
@@ -5865,10 +8002,71 @@
       appendWelcome();
     }
 
+    function projectWasInitialized(result) {
+      return Boolean(result?.projectInit?.initialized && result?.context?.project?.id);
+    }
+
+    async function ensureSoulPresetsLoaded() {
+      if (state.settings?.soulPresets?.length) return;
+      await loadSettings().catch(() => {
+        applySettingsSnapshot(previewSettingsSnapshot(), { persist: false });
+      });
+    }
+
+    function showSoulInitDialog(project) {
+      return new Promise((resolve) => {
+        soulInitProjectText.textContent = `${project.name || "新项目"} 已初始化`;
+        soulInitPresetSelect.innerHTML = soulPresetOptionsHtml("", { includeNone: false, includeManual: false });
+        soulInitPresetSelect.value = soulPresets()[0]?.id || "";
+        applySoulInitBtn.disabled = !soulInitPresetSelect.value;
+        soulInitPresetSelect.onchange = () => {
+          applySoulInitBtn.disabled = !soulInitPresetSelect.value;
+        };
+        const close = (presetId) => {
+          soulInitDialog.classList.add("hidden");
+          skipSoulInitBtn.onclick = null;
+          applySoulInitBtn.onclick = null;
+          resolve(presetId);
+        };
+        skipSoulInitBtn.onclick = () => close("");
+        applySoulInitBtn.onclick = () => close(soulInitPresetSelect.value || "");
+        soulInitDialog.classList.remove("hidden");
+      });
+    }
+
+    async function applySoulPresetToProject(project, presetId) {
+      if (!project?.id || !presetId) return false;
+      const api = getApi();
+      if (!api || !api.get_workspace_settings || !api.save_workspace_settings) return false;
+      const loaded = await api.get_workspace_settings(project.id);
+      if (!loaded.ok) {
+        showToast(loaded.error || "读取工作区配置失败");
+        return false;
+      }
+      const config = loaded.workspaceConfig || defaultWorkspaceConfig();
+      config.soul_preset_id = presetId;
+      const result = await callSettingsApi("save_workspace_settings", project.id, config);
+      if (!result) return false;
+      state.workspaceConfig = result.workspaceConfig || config;
+      state.workspaceRuntime = result.workspaceRuntime || { im_integrations: { qq: [] }, qq_bots: [] };
+      return true;
+    }
+
+    async function maybeGuideSoulForInitializedProject(result) {
+      if (!projectWasInitialized(result)) return;
+      const project = result.context.project;
+      await ensureSoulPresetsLoaded();
+      const presetId = await showSoulInitDialog(project);
+      if (!presetId) return;
+      const applied = await applySoulPresetToProject(project, presetId);
+      if (applied) showToast("SOUL 已应用到当前工作区");
+    }
+
     async function openProjectAndChat(projectId = "default", agentMode = state.agentMode) {
       await syncAgentMode(agentMode);
       const result = await callProjectApi("open_project", projectId || "default");
       if (!result) return;
+      await maybeGuideSoulForInitializedProject(result);
       resetConversationView();
       showChat();
       await refreshFilesAfterProjectChange();
@@ -5885,9 +8083,12 @@
       if (projectDialogTitle) projectDialogTitle.textContent = agent.createTitle;
       projectCreateHint.textContent = agent.createHint;
       projectOperationHint.textContent = agent.createEmptyHint;
-      projectNameInput.placeholder = normalizedMode === "universal"
-        ? "例如：论文资料整理"
-        : "例如：日冕脚本修复";
+      const placeholderByMode = {
+        ra3: "例如：日冕脚本修复",
+        universal: "例如：论文资料整理",
+        assistant: "例如：得力助手资料库"
+      };
+      projectNameInput.placeholder = placeholderByMode[normalizedMode] || "例如：新项目";
       projectNameInput.value = defaultProjectName(normalizedMode);
       projectPathInput.value = suggestedProjectPath(projectNameInput.value, normalizedMode);
       projectDialog.classList.remove("hidden");
@@ -5910,11 +8111,17 @@
         return;
       }
       confirmProjectCreateBtn.disabled = true;
-      const method = agentMode === "universal" ? "create_workspace_project" : "create_project";
+      const methodByMode = {
+        ra3: "create_project",
+        universal: "create_workspace_project",
+        assistant: "create_workspace_project"
+      };
+      const method = methodByMode[agentMode] || "create_project";
       const result = await callProjectApi(method, name, directory);
       confirmProjectCreateBtn.disabled = false;
       if (!result) return;
       closeProjectDialog();
+      await maybeGuideSoulForInitializedProject(result);
       resetConversationView();
       showChat();
       await refreshFilesAfterProjectChange();
@@ -5963,6 +8170,7 @@
       if (result.projects) applyProjectsSnapshot(result.projects);
       if (result.context) applyContext(result.context, false);
       if (result.history) applyHistorySnapshot(result.history);
+      await maybeGuideSoulForInitializedProject(result);
       await loadConversationUsage(true).catch((error) => showToast(error.message || String(error)));
       resetConversationView();
       showChat();
@@ -5996,6 +8204,41 @@
       if (result.projects) applyProjectsSnapshot(result.projects);
       if (result.context) applyContext(result.context, false);
       if (result.history) applyHistorySnapshot(result.history);
+      await maybeGuideSoulForInitializedProject(result);
+      await loadConversationUsage(true).catch((error) => showToast(error.message || String(error)));
+      resetConversationView();
+      showChat();
+      await refreshFilesAfterProjectChange();
+      setBusy(false);
+      showToast(`已打开工作区：${result.context?.project?.name || "工作区"}`);
+    }
+
+    async function openAssistantProjectAndChat() {
+      await syncAgentMode("assistant");
+      const api = getApi();
+      if (!api || !api.open_workspace_project_directory) {
+        showToast("桌面桥尚未就绪");
+        return;
+      }
+      if (openAssistantProjectBtn) openAssistantProjectBtn.disabled = true;
+      let result;
+      try {
+        result = await api.open_workspace_project_directory();
+      } catch (error) {
+        if (openAssistantProjectBtn) openAssistantProjectBtn.disabled = false;
+        showToast(error?.message || "打开工作区失败");
+        return;
+      }
+      if (openAssistantProjectBtn) openAssistantProjectBtn.disabled = false;
+      if (!result.ok) {
+        showToast(result.error || "打开工作区失败");
+        return;
+      }
+      if (result.cancelled) return;
+      if (result.projects) applyProjectsSnapshot(result.projects);
+      if (result.context) applyContext(result.context, false);
+      if (result.history) applyHistorySnapshot(result.history);
+      await maybeGuideSoulForInitializedProject(result);
       await loadConversationUsage(true).catch((error) => showToast(error.message || String(error)));
       resetConversationView();
       showChat();
@@ -6083,11 +8326,44 @@
           provider_name: "DeepSeek 官方",
           name: "deepseek-chat"
         },
+        soulPresets: [
+          {
+            id: "builtin-ra3-game-expert",
+            name: "RA3游戏专家",
+            content: "你是熟悉《红色警戒3》地图、脚本、阵营机制和玩家体验的游戏开发专家。\n你会优先从可玩性、关卡节奏、触发器可靠性、地图资源与调试路径出发给建议。\n回答时保持专业、直接，必要时给出可落地的检查清单和修改步骤。",
+            builtin: true
+          },
+          {
+            id: "builtin-reliable-assistant",
+            name: "可靠助理",
+            content: "你是可靠、稳健、重视事实和执行质量的个人助理。\n你会先澄清目标和约束，再给出清晰可执行的方案。\n当信息不足时明确说明假设；当任务复杂时拆成小步推进。",
+            builtin: true
+          },
+          {
+            id: "builtin-moe-catgirl",
+            name: "萌萌猫娘",
+            content: "你是活泼、亲切、略带可爱语气的助理，但仍然以完成任务为第一优先级。\n你可以用轻松温柔的措辞回应用户，同时保持答案准确、清楚、可执行。\n涉及严肃、技术或高风险问题时收起玩笑，优先给出可靠建议。",
+            builtin: true
+          }
+        ],
         observability: {
           enabled: false,
           langsmith_endpoint: "https://apac.api.smith.langchain.com",
           langsmith_api_key: "",
           langsmith_project: "ra3-copilot"
+        },
+        assistant: {
+          qq_bot_enabled: false,
+          app_id: "",
+          app_secret: ""
+        },
+        assistantRuntime: {
+          enabled: false,
+          running: false,
+          connected: false,
+          state: "disabled",
+          message: "QQ Bot 未启用",
+          last_error: ""
         }
       };
     }
@@ -6181,6 +8457,7 @@
         renderChatModelSelect();
         return;
       }
+      await loadContextUsage(true);
       showToast("已切换模型，下一轮对话生效");
     }
 
@@ -6560,6 +8837,255 @@
       };
     }
 
+    function soulPresets() {
+      const settings = state.settings || previewSettingsSnapshot();
+      return Array.isArray(settings.soulPresets) ? settings.soulPresets : [];
+    }
+
+    function getSoulPreset(id = state.selectedSoulPresetId) {
+      return soulPresets().find((preset) => preset.id === id) || null;
+    }
+
+    function renderSoulPresetSettings() {
+      const presets = soulPresets();
+      if (!state.selectedSoulPresetId || !presets.some((preset) => preset.id === state.selectedSoulPresetId)) {
+        state.selectedSoulPresetId = presets[0]?.id || "";
+        state.soulPresetEditorMode = state.selectedSoulPresetId ? "edit" : "create";
+      }
+      soulPresetList.innerHTML = presets.map((preset) => {
+        const active = preset.id === state.selectedSoulPresetId;
+        return `
+          <div class="settings-list-item provider-list-item${active ? " active" : ""}">
+            <button class="provider-main" type="button" data-soul-preset="${escapeHtml(preset.id)}">
+              <span>
+                <strong>${escapeHtml(preset.name)}</strong>
+                <span>${escapeHtml((preset.content || "").split(/\r?\n/).find(Boolean) || "空 SOUL")}</span>
+              </span>
+              <span class="settings-badge${preset.builtin ? " active" : ""}">${preset.builtin ? "内置" : "自定义"}</span>
+            </button>
+          </div>
+        `;
+      }).join("") || `<div class="recent-empty">还没有 SOUL 预设。</div>`;
+
+      soulPresetList.querySelectorAll("[data-soul-preset]").forEach((button) => {
+        button.addEventListener("click", () => selectSoulPreset(button.dataset.soulPreset));
+      });
+
+      const selected = getSoulPreset();
+      const isBuiltin = Boolean(selected?.builtin);
+      const isCreate = state.soulPresetEditorMode === "create";
+      soulPresetNameInput.value = isCreate ? "" : selected?.name || "";
+      soulPresetContentInput.value = isCreate ? "" : selected?.content || "";
+      soulPresetNameInput.disabled = isBuiltin;
+      soulPresetContentInput.disabled = isBuiltin;
+      saveSoulPresetBtn.disabled = isBuiltin;
+      deleteSoulPresetBtn.disabled = isBuiltin || isCreate || !selected;
+      saveSoulPresetBtn.textContent = isCreate ? "创建 SOUL" : "保存 SOUL";
+      soulPresetStatusText.textContent = isBuiltin
+        ? "内置 SOUL 可查看但不可修改。"
+        : (isCreate ? "正在创建自定义 SOUL。" : "自定义 SOUL 可修改或删除。");
+    }
+
+    function selectSoulPreset(id) {
+      state.selectedSoulPresetId = id || "";
+      state.soulPresetEditorMode = "edit";
+      renderSoulPresetSettings();
+    }
+
+    function beginCreateSoulPreset() {
+      state.selectedSoulPresetId = "";
+      state.soulPresetEditorMode = "create";
+      renderSoulPresetSettings();
+      window.setTimeout(() => soulPresetNameInput.focus(), 0);
+    }
+
+    function currentSoulPresetPayload() {
+      const selected = getSoulPreset();
+      return {
+        id: state.soulPresetEditorMode === "edit" ? selected?.id || "" : "",
+        name: soulPresetNameInput.value.trim(),
+        content: soulPresetContentInput.value.trim()
+      };
+    }
+
+    function soulPresetOptionsHtml(selectedId, { includeNone = false, includeManual = true } = {}) {
+      const options = [];
+      if (includeNone) {
+        options.push(`<option value="">不使用 SOUL</option>`);
+      }
+      if (includeManual && selectedId === "__manual__") {
+        options.push(`<option value="__manual__">当前 SOUL.md（手动文件）</option>`);
+      }
+      for (const preset of soulPresets()) {
+        const label = `${preset.builtin ? "内置 · " : ""}${preset.name}`;
+        options.push(`<option value="${escapeHtml(preset.id)}">${escapeHtml(label)}</option>`);
+      }
+      return options.join("");
+    }
+
+    function defaultWorkspaceConfig() {
+      return { soul_preset_id: "", im_integrations: { qq: [] } };
+    }
+
+    function workspaceConfig() {
+      return state.workspaceConfig || defaultWorkspaceConfig();
+    }
+
+    function workspaceRuntime() {
+      return state.workspaceRuntime || { im_integrations: { qq: [] }, qq_bots: [] };
+    }
+
+    function currentProject() {
+      return state.context?.project || null;
+    }
+
+    function qqBotBindingsFromConfig(config = workspaceConfig()) {
+      const integrations = config?.im_integrations || config?.imIntegrations || {};
+      const qq = Array.isArray(integrations.qq) ? integrations.qq : [];
+      if (qq.length) return qq;
+      return Array.isArray(config?.qq_bots) ? config.qq_bots : [];
+    }
+
+    function qqBotStatusesFromRuntime(runtime = workspaceRuntime()) {
+      const integrations = runtime?.im_integrations || runtime?.imIntegrations || {};
+      const qq = Array.isArray(integrations.qq) ? integrations.qq : [];
+      if (qq.length) return qq;
+      return Array.isArray(runtime?.qq_bots) ? runtime.qq_bots : [];
+    }
+
+    function makeWorkspaceBindingId() {
+      if (window.crypto && typeof window.crypto.randomUUID === "function") {
+        return window.crypto.randomUUID();
+      }
+      return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    function qqBotRuntimeById() {
+      const map = new Map();
+      for (const item of qqBotStatusesFromRuntime()) {
+        map.set(String(item.binding_id || ""), item);
+      }
+      return map;
+    }
+
+    function qqBotStatusText(status) {
+      if (!status) return "未启动";
+      if (status.connected) return "已连接";
+      if (status.running) return status.message || "正在连接";
+      if (status.last_error) return `连接失败：${status.last_error}`;
+      return status.message || "未启动";
+    }
+
+    function renderAssistantSettings() {
+      const project = currentProject();
+      const hasProject = Boolean(project?.id);
+      const projectText = hasProject
+        ? `当前工作区：${project.name || "未命名工作区"} · ${projectKindLabel(project.kind)}`
+        : "尚未打开工作区。";
+      workspaceConfigProjectText.textContent = hasProject
+        ? projectText
+        : "尚未打开工作区。";
+      qqBotWorkspaceStatusText.textContent = projectText;
+      workspaceSoulSettingsSection.hidden = false;
+      assistantQqBotSettingsSection.hidden = !hasProject;
+      workspaceConfigUnavailableSection.hidden = hasProject;
+      saveWorkspaceSoulSettingsBtn.disabled = !hasProject;
+      saveAssistantSettingsBtn.disabled = !hasProject;
+      reloadWorkspaceSettingsBtn.disabled = !hasProject;
+      reloadQqBotSettingsBtn.disabled = !hasProject;
+
+      if (!hasProject) {
+        workspaceSoulPresetSelect.innerHTML = `<option value="">不使用 SOUL</option>`;
+        workspaceSoulPresetSelect.disabled = true;
+        workspaceSoulStatusText.textContent = "打开工作区后可配置 SOUL。";
+        workspaceSoulSaveStatusText.textContent = "打开工作区后可保存 SOUL 配置。";
+        assistantBindingStatusText.textContent = "打开工作区后可配置 IM 接入。";
+        assistantQqBotBindingsList.innerHTML = "";
+        assistantQqBotEmptyRow.hidden = true;
+        return;
+      }
+
+      const config = workspaceConfig();
+      const soulPresetId = config.soul_preset_id || "";
+      workspaceSoulPresetSelect.disabled = false;
+      workspaceSoulPresetSelect.innerHTML = soulPresetOptionsHtml(soulPresetId, { includeNone: true });
+      workspaceSoulPresetSelect.value = soulPresetId;
+      if (soulPresetId === "__manual__") {
+        workspaceSoulStatusText.textContent = "当前存在手动维护的 SOUL.md；选择预设并保存后会覆盖它。";
+      } else if (soulPresetId) {
+        const preset = soulPresets().find((item) => item.id === soulPresetId);
+        workspaceSoulStatusText.textContent = preset
+          ? `当前使用：${preset.name}。保存后会同步写入 SOUL.md。`
+          : "当前 SOUL 预设不存在，请重新选择。";
+      } else {
+        workspaceSoulStatusText.textContent = "当前工作区不使用 SOUL；保存后会保持没有 SOUL.md。";
+      }
+      workspaceSoulSaveStatusText.textContent = "可保存当前工作区 SOUL 配置。";
+
+      const bots = qqBotBindingsFromConfig(config);
+      const runtimeById = qqBotRuntimeById();
+      assistantQqBotBindingsList.innerHTML = bots.map((bot, index) => {
+        const status = runtimeById.get(String(bot.id || ""));
+        return `
+          <div class="qq-bot-binding" data-index="${index}" data-binding-id="${escapeHtml(bot.id || "")}">
+            <div class="qq-bot-binding-head">
+              <div class="qq-bot-binding-title">
+                <strong>QQ Bot ${index + 1}</strong>
+                <span class="qq-bot-status">${escapeHtml(qqBotStatusText(status))}</span>
+              </div>
+              <div class="settings-actions">
+                <label class="settings-switch">
+                  <input type="checkbox" data-field="enabled" ${bot.enabled ? "checked" : ""} />
+                  <span>启用</span>
+                </label>
+                <button class="ghost-btn" type="button" data-action="remove-qq-bot">删除</button>
+              </div>
+            </div>
+            <div class="qq-bot-binding-grid">
+              <label class="settings-field">
+                <span>备注</span>
+                <input class="settings-input" type="text" data-field="remark" value="${escapeHtml(bot.remark || "")}" placeholder="例如：个人单聊 / 项目群" />
+              </label>
+              <label class="settings-field">
+                <span>AppID</span>
+                <input class="settings-input" type="text" inputmode="numeric" data-field="app_id" value="${escapeHtml(bot.app_id || "")}" placeholder="例如 1020..." />
+              </label>
+              <label class="settings-field">
+                <span>AppSecret</span>
+                <input class="settings-input" type="password" autocomplete="off" data-field="app_secret" value="${escapeHtml(bot.app_secret || "")}" placeholder="请输入 AppSecret" />
+              </label>
+            </div>
+          </div>
+        `;
+      }).join("");
+      assistantQqBotEmptyRow.hidden = bots.length > 0;
+      const connectedCount = [...runtimeById.values()].filter((item) => item.connected).length;
+      assistantBindingStatusText.textContent = bots.length
+        ? `${bots.length} 条 QQ Bot 绑定 · ${connectedCount} 条已连接`
+        : "尚未添加 QQ Bot 绑定。";
+    }
+
+    function currentWorkspacePayload() {
+      const rows = Array.from(assistantQqBotBindingsList.querySelectorAll(".qq-bot-binding"));
+      return {
+        soul_preset_id: workspaceSoulPresetSelect.disabled ? workspaceConfig().soul_preset_id || "" : workspaceSoulPresetSelect.value,
+        im_integrations: {
+          qq: rows.map((row) => ({
+            id: row.dataset.bindingId || makeWorkspaceBindingId(),
+            enabled: Boolean(row.querySelector('[data-field="enabled"]')?.checked),
+            remark: row.querySelector('[data-field="remark"]')?.value.trim() || "",
+            app_id: row.querySelector('[data-field="app_id"]')?.value.trim() || "",
+            app_secret: row.querySelector('[data-field="app_secret"]')?.value.trim() || ""
+          }))
+        }
+      };
+    }
+
+    function syncWorkspaceConfigFromForm() {
+      state.workspaceConfig = currentWorkspacePayload();
+      return state.workspaceConfig;
+    }
+
     function renderSettings() {
       renderProviderPresets();
       const providers = state.settings?.providers || [];
@@ -6573,6 +9099,8 @@
       renderFetchedModels();
       renderModelList();
       renderObservabilitySettings();
+      renderSoulPresetSettings();
+      renderAssistantSettings();
       syncRuntimeModelFromSettings();
       renderChatModelSelect();
     }
@@ -6611,6 +9139,57 @@
       if (result.settings) applySettingsSnapshot(result.settings);
       if (result.context) applyContext(result.context, false);
       return result;
+    }
+
+    function stopAssistantRuntimeWatch() {
+      if (!assistantRuntimeTimer) return;
+      window.clearInterval(assistantRuntimeTimer);
+      assistantRuntimeTimer = null;
+    }
+
+    function startAssistantRuntimeWatch() {
+      if (assistantRuntimeTimer) return;
+      assistantRuntimeTimer = window.setInterval(refreshAssistantRuntimeStatus, 5000);
+      refreshAssistantRuntimeStatus();
+    }
+
+    async function loadWorkspaceSettings() {
+      const project = currentProject();
+      if (!project?.id) {
+        state.workspaceConfig = defaultWorkspaceConfig();
+        state.workspaceRuntime = { im_integrations: { qq: [] }, qq_bots: [] };
+        renderAssistantSettings();
+        return null;
+      }
+      const api = getApi();
+      if (!api || !api.get_workspace_settings) {
+        state.workspaceConfig = defaultWorkspaceConfig();
+        state.workspaceRuntime = { im_integrations: { qq: [] }, qq_bots: [] };
+        renderAssistantSettings();
+        return null;
+      }
+      const result = await api.get_workspace_settings(project.id);
+      if (!result.ok) throw new Error(result.error || "读取工作区配置失败");
+      state.workspaceConfig = result.workspaceConfig || defaultWorkspaceConfig();
+      state.workspaceRuntime = result.workspaceRuntime || { im_integrations: { qq: [] }, qq_bots: [] };
+      renderAssistantSettings();
+      return result;
+    }
+
+    async function refreshAssistantRuntimeStatus() {
+      if (state.activeView !== "settings" || state.settingsTab !== "qqbot") {
+        stopAssistantRuntimeWatch();
+        return;
+      }
+      const project = currentProject();
+      if (!project?.id) return;
+      const api = getApi();
+      if (!api || !api.get_workspace_settings) return;
+      const result = await api.get_workspace_settings(project.id).catch(() => null);
+      if (!result?.ok) return;
+      syncWorkspaceConfigFromForm();
+      state.workspaceRuntime = result.workspaceRuntime || { im_integrations: { qq: [] }, qq_bots: [] };
+      renderAssistantSettings();
     }
 
     function previewUsageSnapshot() {
@@ -6750,21 +9329,25 @@
       state.usageLoadedFromBridge = true;
       state.usage = result.usage || previewUsageSnapshot();
       renderUsage();
+      renderInterfaceSettings();
     }
 
     async function openSettings(tab = "providers") {
       state.activeView = "settings";
+      workspace.classList.add("settings-mode");
       workspace.classList.remove("welcome-mode");
       welcomePane.classList.add("view-hidden");
       chatPane.classList.add("view-hidden");
       settingsPane.classList.remove("view-hidden");
-      drawer.classList.add("closed");
+      hidePanel();
       openSettingsBtn.classList.add("active");
       await loadSettings().catch((error) => showToast(error.message || String(error)));
       setSettingsTab(tab);
     }
 
     function closeSettings() {
+      stopAssistantRuntimeWatch();
+      workspace.classList.remove("settings-mode");
       settingsPane.classList.add("view-hidden");
       openSettingsBtn.classList.remove("active");
       if (state.context?.project) {
@@ -6783,8 +9366,24 @@
       modelsSettingsPage.hidden = tab !== "models";
       usageSettingsPage.hidden = tab !== "usage";
       observabilitySettingsPage.hidden = tab !== "observability";
+      soulSettingsPage.hidden = tab !== "soul";
+      assistantSettingsPage.hidden = tab !== "assistant";
+      qqBotSettingsPage.hidden = tab !== "qqbot";
+      interfaceSettingsPage.hidden = tab !== "interface";
       if (tab === "usage") {
         loadUsageSummary().catch((error) => showToast(error.message || String(error)));
+      }
+      if (tab === "interface") renderInterfaceSettings();
+      if (tab === "assistant" || tab === "qqbot") {
+        loadWorkspaceSettings().catch((error) => {
+          showToast(error.message || String(error));
+          renderAssistantSettings();
+        });
+      }
+      if (tab === "qqbot") {
+        startAssistantRuntimeWatch();
+      } else {
+        stopAssistantRuntimeWatch();
       }
     }
 
@@ -6930,8 +9529,18 @@
       return "缺少 API Key";
     }
     function applyContext(context, updateStatus = true) {
+      const prevProjectId = state.context?.project?.id;
+      const nextProjectId = context?.project?.id;
       state.context = context;
+      // Switching projects invalidates workspace-bound tabs. Tool tabs go with
+      // the conversation; file/terminal tabs belong to the project root.
+      if (prevProjectId && nextProjectId && prevProjectId !== nextProjectId) {
+        [...panelTabList].forEach((tab) => {
+          if (tab.kind === "file" || tab.kind === "terminal") closePanelTab(tab.key);
+        });
+      }
       renderCompanionStatus(context.ra3Companion);
+      updateWindowTitle(context);
       if (state.conversationUsageId !== (context.threadId || "")) {
         state.conversationUsage = null;
         state.conversationUsageId = "";
@@ -6945,6 +9554,7 @@
       if (updateStatus) {
         runStatusLabel.textContent = context.agentReady ? "Agent 已缓存" : "准备就绪";
       }
+      scheduleContextUsageRefresh(0);
     }
     function setBusy(busy) {
       state.busy = busy;
@@ -6991,6 +9601,8 @@
 
     function appendAssistantMessage(metaText = "运行中") {
       cancelAssistantRender();
+      state.todos = [];
+      state.todoProgress = null;
       const agent = currentAgentMeta();
       const article = document.createElement("article");
       article.className = "message assistant";
@@ -7108,6 +9720,93 @@
       scrollMessages();
     }
 
+    function normalizeTodoStatus(status) {
+      const value = String(status || "").trim();
+      return ["pending", "in_progress", "completed"].includes(value) ? value : "pending";
+    }
+
+    function normalizeTodos(value) {
+      if (!Array.isArray(value)) return [];
+      return value.map((item) => {
+        if (!item || typeof item !== "object") return null;
+        const content = String(item.content || "").trim();
+        if (!content) return null;
+        return {
+          content,
+          status: normalizeTodoStatus(item.status)
+        };
+      }).filter(Boolean);
+    }
+
+    function todoProgress(todos) {
+      const total = todos.length;
+      const completed = todos.filter((item) => item.status === "completed").length;
+      const inProgress = todos.filter((item) => item.status === "in_progress").length;
+      const pending = Math.max(total - completed - inProgress, 0);
+      const percentage = total ? Math.round((completed / total) * 100) : 0;
+      return { total, completed, inProgress, pending, percentage };
+    }
+
+    function todoStatusLabel(status) {
+      const labels = {
+        pending: "待处理",
+        in_progress: "进行中",
+        completed: "已完成"
+      };
+      return labels[status] || "待处理";
+    }
+
+    function todoPanelHtml(todos) {
+      const progress = todoProgress(todos);
+      const inProgressText = progress.inProgress ? ` · ${progress.inProgress} 进行中` : "";
+      const items = todos.map((todo) => `
+        <li class="todo-item" data-status="${escapeAttribute(todo.status)}">
+          <span class="todo-check" aria-hidden="true"></span>
+          <span class="todo-text">${escapeHtml(todo.content)}</span>
+          <span class="todo-status">${escapeHtml(todoStatusLabel(todo.status))}</span>
+        </li>
+      `).join("");
+      return `
+        <section class="todo-panel" data-todo-panel aria-label="任务进度">
+          <div class="todo-panel-head">
+            <div class="todo-panel-title">
+              <strong>任务进度</strong>
+              <span>${progress.completed}/${progress.total} 已完成${inProgressText}</span>
+            </div>
+            <span class="todo-percent">${progress.percentage}%</span>
+          </div>
+          <div class="todo-progress-track" aria-hidden="true">
+            <span class="todo-progress-bar" style="width: ${progress.percentage}%"></span>
+          </div>
+          <ol class="todo-list">${items}</ol>
+        </section>
+      `;
+    }
+
+    function updateTodoPanel(todos) {
+      const normalized = normalizeTodos(todos);
+      state.todos = normalized;
+      state.todoProgress = todoProgress(normalized);
+
+      const article = state.assistantArticle || (normalized.length ? ensureAssistant() : null);
+      if (!article) return;
+      const bubble = article.querySelector(".bubble");
+      if (!bubble) return;
+      const existing = bubble.querySelector("[data-todo-panel]");
+      if (existing) existing.remove();
+      if (!normalized.length) {
+        scrollMessages();
+        return;
+      }
+      const reference = bubble.querySelector(".tool-panel") || state.assistantBody;
+      if (reference) {
+        reference.insertAdjacentHTML("beforebegin", todoPanelHtml(normalized));
+      } else {
+        bubble.insertAdjacentHTML("beforeend", todoPanelHtml(normalized));
+      }
+      scrollMessages();
+    }
+
     function ensureToolPanel() {
       const article = ensureAssistant();
       let panel = article.querySelector(".tool-panel");
@@ -7198,7 +9897,7 @@
         <span class="event-duration">${escapeHtml(elapsed)}</span>
       `;
       updateToolPanelHeader();
-      if (!drawer.classList.contains("closed") && drawer.dataset.tool === id) {
+      if (panelVisible() && activePanelTabKey() === "tool:" + id) {
         setActiveTool(id);
       }
       scrollMessages();
@@ -7212,16 +9911,15 @@
         item.classList.toggle("active", isActive);
         item.setAttribute("aria-pressed", String(isActive));
       });
-      drawer.dataset.tool = key;
-      drawer.dataset.mode = "tool";
-      drawer.classList.remove("closed");
-      showToolDetailView();
-      drawerToolName.textContent = "工具输出";
-      drawerSubtitle.textContent = `${detail.name} · ${detail.subtitle}`;
-      renderMeta(detail.meta);
-      drawerArgs.textContent = formatJson(detail.args);
-      drawerResult.textContent = detail.result;
-      drawerNotice.textContent = detail.notice;
+      const title = `${detail.name}` || "工具输出";
+      openPanelTab("tool", "tool:" + key, title, () => {
+        drawerToolName.textContent = "工具输出";
+        drawerSubtitle.textContent = `${detail.name} · ${detail.subtitle}`;
+        renderMeta(detail.meta);
+        drawerArgs.textContent = formatJson(detail.args);
+        drawerResult.textContent = detail.result;
+        drawerNotice.textContent = detail.notice;
+      });
     }
 
     function closePermissionPopover() {
@@ -7235,9 +9933,9 @@
     }
 
     function setPermissionPolicy(policy) {
-      selectedPermissionPolicy = policy;
+      selectedPermissionPolicy = ["once", "remember", "explain", "plan"].includes(policy) ? policy : "once";
       permissionOptions.forEach((option) => {
-        const isActive = option.dataset.policy === policy;
+        const isActive = option.dataset.policy === selectedPermissionPolicy;
         option.classList.toggle("active", isActive);
         option.setAttribute("aria-checked", String(isActive));
       });
@@ -7245,17 +9943,20 @@
       const noteByPolicy = {
         once: "标准运行会让 Agent 按需调用本地工具。",
         remember: "会提示 Agent 优先只读；涉及写入前先解释。",
-        explain: "会提示 Agent 先说明计划，本轮暂不主动调用工具。"
+        explain: "会提示 Agent 先说明计划，本轮暂不主动调用工具。",
+        plan: "会让 Agent 创建结构化计划，并显示任务进度。"
       };
       const commandByPolicy = {
-        once: state.agentMode === "universal"
-          ? "标准运行：使用通用智能体处理任务。"
-          : "标准运行：按需调用 RA3 Companion 工具。",
+        once: state.agentMode === "ra3"
+          ? "标准运行：按需调用 RA3 Companion 工具。"
+          : `标准运行：使用${currentAgentMeta().label}处理任务。`,
         remember: "只读优先：需要写入、复制或运行脚本前先解释。",
-        explain: "先说明计划：本轮先给出人工确认项。"
+        explain: "先说明计划：本轮先给出人工确认项。",
+        plan: "计划模式：创建 todo 计划，不执行写入或高影响操作。"
       };
-      permissionNote.textContent = noteByPolicy[policy];
-      permissionCommand.textContent = commandByPolicy[policy];
+      permissionNote.textContent = noteByPolicy[selectedPermissionPolicy];
+      permissionCommand.textContent = commandByPolicy[selectedPermissionPolicy];
+      sendBtn.textContent = selectedPermissionPolicy === "plan" ? "创建计划" : "发送";
     }
 
     async function ensureDaemon() {
@@ -7269,6 +9970,7 @@
           const info = await bridge.get_daemon_info();
           if (info && info.ready && info.baseUrl) {
             DAEMON_BASE_URL = info.baseUrl;
+            DAEMON_TOKEN = info.token || "";
             return { ready: true };
           }
           if (info && info.error) {
@@ -7283,38 +9985,47 @@
     }
 
     // Background health monitor: once the daemon has been reachable, poll its
-    // /health endpoint. If it stays unreachable (the daemon exited), close the
-    // window — there is no backend to serve it. A few consecutive failures are
-    // required to avoid killing the window on a transient network blip.
-    const DAEMON_HEALTH_INTERVAL = 3000;
-    const DAEMON_HEALTH_FAIL_LIMIT = 2;
+    // /health endpoint. Localhost failures usually mean the singleton daemon
+    // has exited, so close this thin window quickly.
+    const DAEMON_HEALTH_INTERVAL = 600;
+    const DAEMON_HEALTH_TIMEOUT = 500;
+    const DAEMON_HEALTH_FAIL_LIMIT = 1;
     let daemonHealthTimer = null;
     let daemonHealthFailures = 0;
     let daemonWasReady = false;
+    let daemonClosing = false;
+    let assistantRuntimeTimer = null;
 
     function startDaemonHealthWatch() {
       if (daemonHealthTimer) return;
       daemonWasReady = true;
+      daemonClosing = false;
+      daemonHealthFailures = 0;
       daemonHealthTimer = window.setInterval(pollDaemonHealth, DAEMON_HEALTH_INTERVAL);
+      pollDaemonHealth();
     }
 
     async function pollDaemonHealth() {
-      if (!daemonWasReady || !DAEMON_BASE_URL) return;
+      if (!daemonWasReady || daemonClosing || !DAEMON_BASE_URL) return;
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), DAEMON_HEALTH_TIMEOUT);
       try {
-        const res = await fetch(DAEMON_BASE_URL + "/health", { method: "GET" });
+        const res = await fetch(DAEMON_BASE_URL + "/health", {
+          method: "GET",
+          cache: "no-store",
+          signal: controller.signal
+        });
+        window.clearTimeout(timeout);
         if (res.ok) {
           daemonHealthFailures = 0;
           return;
         }
         throw new Error("health " + res.status);
       } catch (err) {
+        window.clearTimeout(timeout);
         daemonHealthFailures += 1;
         if (daemonHealthFailures >= DAEMON_HEALTH_FAIL_LIMIT) {
-          if (daemonHealthTimer) { window.clearInterval(daemonHealthTimer); daemonHealthTimer = null; }
-          const bridge = localBridge();
-          if (bridge && typeof bridge.close_window === "function") {
-            bridge.close_window();
-          }
+          handleDaemonLost(err);
         }
       }
     }
@@ -7373,7 +10084,9 @@
       if (event.type === "run_started") {
         state.runStartedAt = performance.now();
         state.tools = new Map();
-        setAssistantStatus("正在连接 Agent...");
+        state.todos = [];
+        state.todoProgress = null;
+        setAssistantStatus(event.permissionPolicy === "plan" ? "正在创建计划..." : "正在连接 Agent...");
         return;
       }
       if (event.type === "status") {
@@ -7385,8 +10098,21 @@
         runStatusLabel.textContent = "正在生成回复";
         return;
       }
+      if (event.type === "todos_updated") {
+        updateTodoPanel(event.todos || []);
+        const progress = state.todoProgress || todoProgress(state.todos);
+        runStatusLabel.textContent = progress.total
+          ? `任务进度 ${progress.completed}/${progress.total}`
+          : "任务列表已清空";
+        return;
+      }
       if (event.type === "tool_call" || event.type === "tool_result") {
-        upsertTool(event.tool || {});
+        const tool = event.tool || {};
+        if (tool.name === "write_todos") {
+          runStatusLabel.textContent = event.type === "tool_call" ? "正在更新任务" : "任务进度已更新";
+          return;
+        }
+        upsertTool(tool);
         runStatusLabel.textContent = event.type === "tool_call" ? "正在调用工具" : "工具已返回";
         return;
       }
@@ -7406,6 +10132,9 @@
       if (event.type === "done") {
         if (!state.assistantBuffer && event.status === "cancelled") {
           appendAssistantDelta("本轮运行已中止。");
+        }
+        if (Array.isArray(event.todos)) {
+          updateTodoPanel(event.todos);
         }
         if (event.usage) {
           appendRunUsageSummary(event.usage);
@@ -7522,6 +10251,7 @@
         });
         if (!result.ok) throw new Error(result.error || "无法启动 Agent");
         if (result.history) applyHistorySnapshot(result.history);
+        loadContextUsage(true).catch((error) => console.warn("Context usage refresh failed", error));
         state.currentRunId = result.runId;
         schedulePoll(result.runId, true);
       } catch (error) {
@@ -7540,6 +10270,7 @@
     });
 
     menuOpenNewWindow.addEventListener("click", openNewWindowFromMenu);
+    openNewWindowBtn.addEventListener("click", openNewWindowFromMenu);
     menuBackWelcome.addEventListener("click", returnToWelcomeFromMenu);
     menuOpenProjectFolder.addEventListener("click", openProjectFolderFromMenu);
     menuOpenProjectTerminal.addEventListener("click", openProjectTerminalFromMenu);
@@ -7556,6 +10287,10 @@
       closeFileContextMenu();
       refreshProjectFiles().catch((error) => showToast(error.message || "刷新文件树失败"));
     });
+    fileMenuReveal.addEventListener("click", () => {
+      closeFileContextMenu();
+      revealInFileManager().catch((error) => showToast(error.message || "打开失败"));
+    });
     fileMenuNewFile.addEventListener("click", () => createProjectItemFromMenu("file"));
     fileMenuNewFolder.addEventListener("click", () => createProjectItemFromMenu("folder"));
     fileMenuRename.addEventListener("click", renameProjectItemFromMenu);
@@ -7563,6 +10298,8 @@
 
     document.addEventListener("click", (event) => {
       if (!projectMenuRoot.contains(event.target)) closeProjectMenu();
+      if (contextUsageShell && !contextUsageShell.contains(event.target)) setContextUsageOpen(false);
+      if (panelAddMenu && !panelAddMenu.contains(event.target) && !panelAddTabBtn.contains(event.target)) closePanelAddMenu();
       if (!historyContextMenu.contains(event.target)) closeHistoryContextMenu();
       if (!fileContextMenu.contains(event.target)) closeFileContextMenu();
     });
@@ -7597,13 +10334,14 @@
         event.preventDefault();
         openSettingsFromMenu();
       }
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s" && drawer.dataset.mode === "file") {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s" && activePanelTabKind() === "file") {
         event.preventDefault();
         saveActiveFile();
       }
     });
 
     document.addEventListener("scroll", () => {
+      closePanelAddMenu();
       closeHistoryContextMenu();
       closeFileContextMenu();
     }, true);
@@ -7632,8 +10370,52 @@
         }
       });
     });
-    closeDrawer.addEventListener("click", () => {
-      drawer.classList.add("closed");
+    openTerminalTabBtn.addEventListener("click", openTerminalTab);
+    togglePanelBtn.addEventListener("click", togglePanelVisibility);
+    panelAddTabBtn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (panelAddMenu.hidden) openPanelAddMenu();
+      else closePanelAddMenu();
+    });
+    panelTerminalBtn.addEventListener("click", openTerminalTab);
+    panelAddMenu.addEventListener("click", (event) => {
+      event.stopPropagation();
+    });
+    panelMenuNewTerminal.addEventListener("click", () => {
+      closePanelAddMenu();
+      openTerminalTab();
+    });
+    panelMenuOpenSelectedFile.addEventListener("click", async () => {
+      closePanelAddMenu();
+      if (!state.selectedFilePath || state.selectedFileType !== "file") {
+        setSidebarMode("files");
+        showToast("请先在项目文件中选择文件");
+        return;
+      }
+      await selectProjectItem(state.selectedFilePath, "file");
+    });
+    panelMenuShowFiles.addEventListener("click", () => {
+      closePanelAddMenu();
+      setSidebarMode("files");
+      showToast("从项目文件中选择文件即可打开标签");
+    });
+    closePanelBtn.addEventListener("click", hidePanel);
+    initPanelWidth();
+    initPanelResizer();
+    updatePanelToggleButton();
+
+    terminalRunBtn.addEventListener("click", runActiveTerminalCommand);
+    terminalClearBtn.addEventListener("click", () => {
+      const session = terminalSessionForKey();
+      if (!session) return;
+      session.entries = [{ kind: "meta", text: session.cwd ? `# ${session.cwd}` : "# 当前工作区" }];
+      renderTerminalPane(session.key);
+    });
+    terminalCommandInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        runActiveTerminalCommand();
+      }
     });
 
     copyResult.addEventListener("click", async () => {
@@ -7672,6 +10454,27 @@
       }
     });
 
+    contextUsageBtn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const nextOpen = !contextUsageShell.classList.contains("open");
+      setContextUsageOpen(nextOpen);
+      if (nextOpen) {
+        loadContextUsage(true).catch((error) => console.warn("Context usage refresh failed", error));
+      }
+    });
+
+    contextUsageShell.addEventListener("mouseenter", () => {
+      contextUsagePopover.setAttribute("aria-hidden", "false");
+      contextUsageBtn.setAttribute("aria-expanded", "true");
+    });
+
+    contextUsageShell.addEventListener("mouseleave", () => {
+      if (!contextUsageShell.classList.contains("open")) {
+        contextUsagePopover.setAttribute("aria-hidden", "true");
+        contextUsageBtn.setAttribute("aria-expanded", "false");
+      }
+    });
+
     permissionSkip.addEventListener("click", () => {
       closePermissionPopover();
       setPermissionPolicy("once");
@@ -7683,7 +10486,8 @@
       const labelByPolicy = {
         once: "标准运行",
         remember: "只读优先",
-        explain: "先说明计划"
+        explain: "先说明计划",
+        plan: "计划模式"
       };
       closePermissionPopover();
       permissionMenuBtn.textContent = labelByPolicy[selectedPermissionPolicy];
@@ -7702,6 +10506,7 @@
         return;
       }
       promptInput.value = "";
+      scheduleContextUsageRefresh(0);
       startRun(text);
     }
 
@@ -7715,6 +10520,10 @@
         event.preventDefault();
         submitPrompt();
       }
+    });
+
+    promptInput.addEventListener("input", () => {
+      scheduleContextUsageRefresh(420);
     });
 
     newChatBtn.addEventListener("click", async () => {
@@ -7733,10 +10542,11 @@
           // /history/new returns {threadId, history} but no context object;
           // fold the new thread id into the existing context instead.
           if (result.threadId && state.context) {
-            state.context.threadId = result.threadId;
+            setActiveConversationId(result.threadId);
           }
           if (result.history) applyHistorySnapshot(result.history);
           await loadConversationUsage(true).catch((error) => showToast(error.message || String(error)));
+          await loadContextUsage(true);
         }
       }
       resetConversationView();
@@ -7752,10 +10562,16 @@
     });
     fileEditModeBtn.addEventListener("click", () => setFileViewMode("edit"));
     fileEditor.addEventListener("input", () => {
+      if (fileCodeEditor) return;
       updateFileDirty(true);
       updateCodePreview();
     });
-    fileEditor.addEventListener("scroll", syncEditorHighlightScroll);
+    fileEditor.addEventListener("scroll", () => {
+      if (fileCodeEditor) return;
+      rememberFileScroll(fileEditor);
+    });
+    fileCodePreview.addEventListener("scroll", () => rememberFileScroll(fileCodePreview));
+    fileMarkdownPreview.addEventListener("scroll", () => rememberFileScroll(fileMarkdownPreview));
     reloadFileBtn.addEventListener("click", () => {
       if (!state.selectedFilePath || state.selectedFileType !== "file") return;
       selectProjectItem(state.selectedFilePath, "file");
@@ -7764,6 +10580,7 @@
 
     selectRa3AgentBtn.addEventListener("click", () => showAgentWelcome("ra3"));
     selectUniversalAgentBtn.addEventListener("click", () => showAgentWelcome("universal"));
+    selectAssistantBtn.addEventListener("click", () => showAgentWelcome("assistant"));
     agentBackButtons.forEach((button) => {
       button.addEventListener("click", showAgentSelection);
     });
@@ -7779,9 +10596,19 @@
     });
     createUniversalProjectBtn.addEventListener("click", () => openProjectDialog("universal"));
     openWorkspaceProjectBtn.addEventListener("click", openWorkspaceProjectAndChat);
+    createAssistantProjectBtn?.addEventListener("click", () => openProjectDialog("assistant"));
+    openAssistantProjectBtn?.addEventListener("click", openAssistantProjectAndChat);
     closeProjectDialogBtn.addEventListener("click", closeProjectDialog);
     projectDialog.addEventListener("click", (event) => {
       if (event.target === projectDialog) closeProjectDialog();
+    });
+    deleteConfirmDialog.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-delete-choice]");
+      if (button) {
+        closeDeleteConfirmDialog(button.dataset.deleteChoice || "cancel");
+        return;
+      }
+      if (event.target === deleteConfirmDialog) closeDeleteConfirmDialog("cancel");
     });
     projectNameInput.addEventListener("input", syncProjectPathWithName);
     projectPathInput.addEventListener("input", () => {
@@ -7801,6 +10628,10 @@
       }
     });
     confirmProjectCreateBtn.addEventListener("click", createProjectAndChat);
+
+    quickOpenWorkspaceBtn.addEventListener("click", openWorkspaceProjectAndChat);
+    quickCreateWorkspaceBtn.addEventListener("click", () => openProjectDialog("universal"));
+    quickOpenMapProjectBtn.addEventListener("click", openMapProjectAndChat);
 
     openSettingsBtn.addEventListener("click", () => {
       openSettings("providers");
@@ -7932,6 +10763,107 @@
       setUsageDisplayPreference(usageDisplayToggle.checked);
     });
 
+    codeHighlightThemeSelect.addEventListener("change", () => {
+      setCodeHighlightTheme(codeHighlightThemeSelect.value);
+    });
+
+    newSoulPresetBtn.addEventListener("click", beginCreateSoulPreset);
+
+    saveSoulPresetBtn.addEventListener("click", async () => {
+      const payload = currentSoulPresetPayload();
+      if (!payload.name) {
+        showToast("SOUL 名称不能为空");
+        soulPresetNameInput.focus();
+        return;
+      }
+      const originalId = state.soulPresetEditorMode === "edit" ? getSoulPreset()?.id || "" : "";
+      const result = await callSettingsApi("save_soul_preset", payload, originalId);
+      if (!result) return;
+      state.soulPresetEditorMode = "edit";
+      state.selectedSoulPresetId = result.soulPreset?.id || originalId || "";
+      renderSettings();
+      showToast("SOUL 预设已保存");
+    });
+
+    deleteSoulPresetBtn.addEventListener("click", async () => {
+      const preset = getSoulPreset();
+      if (!preset || preset.builtin) return;
+      const confirmed = window.confirm(`删除 SOUL 预设“${preset.name}”？`);
+      if (!confirmed) return;
+      const result = await callSettingsApi("delete_soul_preset", preset.id);
+      if (!result) return;
+      state.selectedSoulPresetId = "";
+      renderSettings();
+      showToast("SOUL 预设已删除");
+    });
+
+    workspaceSoulPresetSelect.addEventListener("change", () => {
+      syncWorkspaceConfigFromForm();
+      renderAssistantSettings();
+    });
+
+    addAssistantQqBotBindingBtn.addEventListener("click", () => {
+      const nextConfig = syncWorkspaceConfigFromForm();
+      nextConfig.im_integrations = nextConfig.im_integrations || {};
+      nextConfig.im_integrations.qq = Array.isArray(nextConfig.im_integrations.qq)
+        ? nextConfig.im_integrations.qq
+        : [];
+      nextConfig.im_integrations.qq.push({
+        id: makeWorkspaceBindingId(),
+        enabled: false,
+        remark: "",
+        app_id: "",
+        app_secret: ""
+      });
+      state.workspaceConfig = nextConfig;
+      renderAssistantSettings();
+    });
+
+    async function reloadWorkspaceSettingsFromButton(button) {
+      button.disabled = true;
+      try {
+        await loadWorkspaceSettings();
+        showToast("工作区配置已刷新");
+      } catch (error) {
+        showToast(error.message || String(error));
+      } finally {
+        renderAssistantSettings();
+      }
+    }
+
+    reloadWorkspaceSettingsBtn.addEventListener("click", () => {
+      reloadWorkspaceSettingsFromButton(reloadWorkspaceSettingsBtn);
+    });
+
+    reloadQqBotSettingsBtn.addEventListener("click", () => {
+      reloadWorkspaceSettingsFromButton(reloadQqBotSettingsBtn);
+    });
+
+    assistantQqBotBindingsList.addEventListener("input", () => {
+      syncWorkspaceConfigFromForm();
+    });
+
+    assistantQqBotBindingsList.addEventListener("change", () => {
+      syncWorkspaceConfigFromForm();
+    });
+
+    assistantQqBotBindingsList.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-action]");
+      if (!button || button.dataset.action !== "remove-qq-bot") return;
+      const row = button.closest(".qq-bot-binding");
+      const index = Number(row?.dataset.index ?? -1);
+      const nextConfig = syncWorkspaceConfigFromForm();
+      nextConfig.im_integrations = nextConfig.im_integrations || {};
+      nextConfig.im_integrations.qq = Array.isArray(nextConfig.im_integrations.qq)
+        ? nextConfig.im_integrations.qq
+        : [];
+      if (index >= 0) {
+        nextConfig.im_integrations.qq.splice(index, 1);
+        state.workspaceConfig = nextConfig;
+        renderAssistantSettings();
+      }
+    });
+
     saveObservabilityBtn.addEventListener("click", async () => {
       const payload = currentObservabilityPayload();
       if (payload.enabled && !payload.langsmith_api_key) {
@@ -7949,6 +10881,64 @@
       }
       renderObservabilitySettings();
       showToast(payload.enabled ? "观测已开启，下一轮对话生效" : "观测已关闭");
+    });
+
+    async function saveWorkspaceSettingsFromForm({ validateQqBot, button, statusElement, successMessage }) {
+      const project = currentProject();
+      if (!project?.id) {
+        showToast("请先打开工作区");
+        return;
+      }
+      const payload = currentWorkspacePayload();
+      if (validateQqBot) {
+        for (const row of Array.from(assistantQqBotBindingsList.querySelectorAll(".qq-bot-binding"))) {
+          const enabledInput = row.querySelector('[data-field="enabled"]');
+          if (!enabledInput?.checked) continue;
+          const appIdInput = row.querySelector('[data-field="app_id"]');
+          const appSecretInput = row.querySelector('[data-field="app_secret"]');
+          if (!appIdInput?.value.trim()) {
+            showToast("启用 QQ Bot 需要填写 AppID");
+            appIdInput?.focus();
+            return;
+          }
+          if (!appSecretInput?.value.trim()) {
+            showToast("启用 QQ Bot 需要填写 AppSecret");
+            appSecretInput?.focus();
+            return;
+          }
+        }
+      }
+      button.disabled = true;
+      statusElement.textContent = "正在保存工作区配置...";
+      const result = await callSettingsApi("save_workspace_settings", project.id, payload);
+      button.disabled = false;
+      if (!result) {
+        statusElement.textContent = "保存失败，请检查配置。";
+        return;
+      }
+      state.workspaceConfig = result.workspaceConfig || payload;
+      state.workspaceRuntime = result.workspaceRuntime || { im_integrations: { qq: [] }, qq_bots: [] };
+      renderAssistantSettings();
+      await loadProjects().catch(() => {});
+      showToast(successMessage);
+    }
+
+    saveWorkspaceSoulSettingsBtn.addEventListener("click", () => {
+      saveWorkspaceSettingsFromForm({
+        validateQqBot: false,
+        button: saveWorkspaceSoulSettingsBtn,
+        statusElement: workspaceSoulSaveStatusText,
+        successMessage: "SOUL 已保存"
+      });
+    });
+
+    saveAssistantSettingsBtn.addEventListener("click", () => {
+      saveWorkspaceSettingsFromForm({
+        validateQqBot: true,
+        button: saveAssistantSettingsBtn,
+        statusElement: assistantBindingStatusText,
+        successMessage: "QQ Bot 绑定已保存"
+      });
     });
 
     newModelBtn.addEventListener("click", beginCreateModel);
@@ -7987,6 +10977,8 @@
     setAgentMode(readAgentModePreference(), false);
     setPermissionPolicy("once");
     setUsageDisplayPreference(readUsageDisplayPreference(), false);
+    renderContextUsage();
+    renderInterfaceSettings();
     applyProjectsSnapshot(previewProjectsSnapshot());
     const cachedSettings = readSettingsCache();
     if (cachedSettings) {

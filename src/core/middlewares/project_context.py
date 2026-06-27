@@ -21,6 +21,7 @@ from typing import Awaitable, Callable
 from langchain.agents.middleware import wrap_model_call
 from langchain_core.messages import SystemMessage
 
+from core.agents.project_instructions import load_project_instruction_files
 from core.user_data.projects import DEFAULT_PROJECT_ID, open_project
 
 
@@ -46,6 +47,9 @@ def _resolve_project_context(project_id: str | None) -> str | None:
         "请使用相对路径或以 / 开头的虚拟路径（如 /a.md 或 docs/readme.md），"
         "路径会自动解析到工程根目录下；不要使用 Windows 绝对路径（如 C:\\...）。"
     )
+    instruction_block = load_project_instruction_files(path)
+    if instruction_block:
+        lines.extend(["", instruction_block])
     return "\n".join(lines)
 
 

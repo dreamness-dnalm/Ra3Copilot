@@ -15,6 +15,7 @@ import socket
 from fastapi import APIRouter
 from pydantic import BaseModel
 
+from core.context_usage import estimate_context_usage
 from core.runtime_env import get_langsmith_status
 from core.user_data.config import get_active_model
 from core.user_data.projects import PROJECTS_DIR
@@ -82,6 +83,23 @@ def get_context(body: ContextBody):
         agentReady=agent_ready(agent_mode),
         langsmith=get_langsmith_status(),
         ra3Companion=_ra3_companion_status(),
+    )
+
+
+class ContextUsageBody(ContextBody):
+    draftText: str | None = None
+
+
+@router.post("/context/usage")
+def get_context_usage(body: ContextUsageBody):
+    agent_mode = normalize_agent_mode(body.agentMode or "ra3")
+    return ok(
+        usage=estimate_context_usage(
+            project=body.project,
+            thread_id=body.threadId,
+            agent_mode=agent_mode,
+            draft_text=body.draftText or "",
+        )
     )
 
 
